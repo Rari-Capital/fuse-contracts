@@ -1,0 +1,39 @@
+{
+  "name": "fuse-contracts",
+  "version": "0.1.0",
+  "description": "Smart contracts for Fuse by Rari Capital.",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "compile": "truffle compile --all",
+    "ganache": "node scripts/ganache.js",
+    "test": "sh scripts/test.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rari-Capital/fuse-contracts.git"
+  },
+  "author": {
+    "name": "David Lucid",
+    "email": "david@rari.capital",
+    "url": "https://github.com/davidlucid"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/Rari-Capital/fuse-contracts/issues"
+  },
+  "homepage": "https://github.com/Rari-Capital/fuse-contracts#readme",
+  "devDependencies": {
+    "@openzeppelin/truffle-upgrades": "^1.1.0",
+    "@truffle/hdwallet-provider": "^1.0.36",
+    "dotenv": "^8.2.0",
+    "ganache-core": "^2.11.3-beta.0",
+    "truffle": "^5.1.45"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^3.3.0",
+    "@openzeppelin/upgrades": "^2.8.0"
+  }
+}

@@ -1,0 +1,12 @@
+# Dependency directory
+node_modules
+
+# Local environment variables
+.env
+
+# Truffle build directory
+build/
+
+# OpenZeppelin development artifacts
+.openzeppelin/*
+!.openzeppelin/mainnet.json
