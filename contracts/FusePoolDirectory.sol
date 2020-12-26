@@ -217,11 +217,12 @@ contract FusePoolDirectory {
      * @notice Returns the users of the specified Fuse pool.
      * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param comptroller The Comptroller contract of the Fuse pool.
+     * @param maxHealth The maximum health (scaled by 1e18) for which return data.
      * @return An array of Fuse pool users, the pool's close factor, and the pool's liquidation incentive.
      */
-    function getPoolUsersWithData(Comptroller comptroller) external returns (FusePoolUser[] memory, uint256, uint256) {
+    function getPoolUsersWithData(Comptroller comptroller, uint256 maxHealth) external returns (FusePoolUser[] memory, uint256, uint256) {
         address[] memory users = comptroller.getAllUsers();
-        FusePoolUser[] memory detailedUsers = new FusePoolUser[](users.length);
+        uint256 arrayLength = 0;
 
         for (uint256 i = 0; i < users.length; i++) {
             uint256 totalBorrow = 0;
@@ -236,7 +237,30 @@ contract FusePoolDirectory {
                 }
             }
 
-            detailedUsers[i] = FusePoolUser(users[i], totalBorrow, totalCollateral, totalCollateral.mul(1e18).div(totalBorrow), assets);
+            uint256 health = totalCollateral.mul(1e18).div(totalBorrow);
+            if (health <= maxHealth) arrayLength++;
+        }
+
+        FusePoolUser[] memory detailedUsers = new FusePoolUser[](arrayLength);
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < users.length; i++) {
+            uint256 totalBorrow = 0;
+            uint256 totalCollateral = 0;
+            FusePoolAsset[] memory assets = getPoolAssetsWithData(comptroller, comptroller.getAssetsIn(users[i]), users[i]);
+
+            for (uint256 j = 0; j < assets.length; j++) {
+                totalBorrow = totalBorrow.add(assets[i].borrowBalance);
+
+                if (assets[i].membership) {
+                    totalCollateral = totalCollateral.add(assets[i].supplyBalance.mul(assets[i].collateralFactor).div(1e18));
+                }
+            }
+
+            uint256 health = totalCollateral.mul(1e18).div(totalBorrow);
+            if (health > maxHealth) continue;
+            detailedUsers[index] = FusePoolUser(users[i], totalBorrow, totalCollateral, health, assets);
+            index++;
         }
 
         return (detailedUsers, comptroller.closeFactorMantissa(), comptroller.liquidationIncentiveMantissa());
