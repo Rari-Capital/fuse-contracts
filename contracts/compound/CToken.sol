@@ -24,5 +24,6 @@ interface CToken {
     function supplyRatePerBlock() external view returns (uint);
     function totalBorrowsCurrent() external returns (uint);
     function borrowBalanceCurrent(address account) external returns (uint);
+    function exchangeRateCurrent() external returns (uint);
     function getCash() external view returns (uint);
 }

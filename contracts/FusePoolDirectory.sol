@@ -75,35 +75,6 @@ contract FusePoolDirectory {
     }
 
     /**
-     * @dev Array of Fuse money market pools.
-     */
-    address[][] public assets;
-
-    /**
-     * @dev Maps Fuse pool indexes to asset addresses to bools indicating if they have been posted to the directory.
-     */
-    mapping(address => bool)[] public assetExists;
-
-    /**
-     * @dev Emitted when a new asset is added to a Fuse pool in the directory.
-     */
-    event AssetRegistered(uint256 index, address cToken);
-
-    /**
-     * @dev Adds a new asset to a Fuse pool.
-     * @param pool The index of the Fuse pool.
-     * @param cToken The pool's Comptroller contract address.
-     * @return The index of the registered asset in the Fuse pool.
-     */
-    function registerAsset(uint256 pool, address cToken) external returns (uint256) {
-        require(!assetExists[pool][cToken], "Pool already exists in the directory.");
-        require(msg.sender == Comptroller(pools[pool].comptroller).admin(), "Pool admin is not the sender.");
-        assets[pool].push(cToken);
-        assetExists[pool][cToken] = true;
-        emit AssetRegistered(assets[pool].length - 1, cToken);
-    }
-
-    /**
      * @notice Returns arrays of all public Fuse pool indexes and data.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      */
@@ -124,74 +95,150 @@ contract FusePoolDirectory {
     }
 
     /**
-     * @notice Returns an array of Fuse pools created by `account`.
+     * @notice Returns arrays of Fuse pool indexes and data created by `account`.
      */
-    function getPoolsByAccount(address account) external view returns (FusePool[] memory) {
+    function getPoolsByAccount(address account) external view returns (uint256[] memory, FusePool[] memory) {
+        uint256[] memory indexes = new uint256[](_poolsByAccount[account].length);
         FusePool[] memory accountPools = new FusePool[](_poolsByAccount[account].length);
-        for (uint256 i = 0; i < _poolsByAccount[account].length; i++) accountPools[i] = pools[_poolsByAccount[account][i]];
-        return accountPools;
+
+        for (uint256 i = 0; i < _poolsByAccount[account].length; i++) {
+            indexes[i] = _poolsByAccount[account][i];
+            accountPools[i] = pools[_poolsByAccount[account][i]];
+        }
+
+        return (indexes, accountPools);
     }
 
     /**
      * @dev Struct for a Fuse money market pool asset.
      */
-    struct FuseAsset {
+    struct FusePoolAsset {
         address cToken;
         address underlyingToken;
         string underlyingName;
         string underlyingSymbol;
-        uint256 underlyingDecimal;
+        uint256 underlyingDecimals;
         uint256 underlyingBalance;
-        uint256 supplyRatesPerBlock;
-        uint256 borrowRatesPerBlock;
+        uint256 supplyRatePerBlock;
+        uint256 borrowRatePerBlock;
         uint256 totalSupply;
         uint256 totalBorrow;
         uint256 supplyBalance;
         uint256 borrowBalance;
         uint256 liquidity;
         bool membership;
+        uint256 exchangeRate;
+        uint256 underlyingPrice;
+        uint256 collateralFactor;
+    }
+
+    /**
+     * @notice Returns data on the specified assets of the specified Fuse pool.
+     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @param comptroller The Comptroller contract address of the Fuse pool.
+     * @param cTokens The cToken contract addresses of the assets to query.
+     * @param user The user for which to get account data.
+     * @return An array of Fuse pool assets.
+     */
+    function getPoolAssetsWithData(Comptroller comptroller, CToken[] memory cTokens, address user) internal returns (FusePoolAsset[] memory) {
+        uint256 arrayLength = 0;
+
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            (bool isListed, ) = comptroller.markets(address(cTokens[i]));
+            if (isListed) arrayLength++;
+        }
+
+        FusePoolAsset[] memory detailedAssets = new FusePoolAsset[](arrayLength);
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            (bool isListed, uint256 collateralFactorMantissa) = comptroller.markets(address(cTokens[i]));
+            if (!isListed) continue;
+
+            FusePoolAsset memory asset;
+            CToken cToken = cTokens[i];
+            asset.cToken = address(cToken);
+
+            if (cToken.isCEther()) {
+                asset.underlyingName = "Ethereum";
+                asset.underlyingSymbol = "ETH";
+                asset.underlyingDecimals = 18;
+                asset.underlyingBalance = user.balance;
+            } else {
+                asset.underlyingToken = CErc20(address(cToken)).underlying();
+                ERC20Upgradeable underlying = ERC20Upgradeable(asset.underlyingToken);
+                asset.underlyingName = underlying.name();
+                asset.underlyingSymbol = underlying.symbol();
+                asset.underlyingDecimals = underlying.decimals();
+                asset.underlyingBalance = underlying.balanceOf(user);
+            }
+
+            asset.supplyRatePerBlock = cToken.supplyRatePerBlock();
+            asset.borrowRatePerBlock = cToken.borrowRatePerBlock();
+            asset.liquidity = cToken.getCash();
+            asset.totalBorrow = cToken.totalBorrowsCurrent();
+            asset.totalSupply = asset.liquidity.add(asset.totalBorrow).sub(cToken.totalReserves());
+            asset.supplyBalance = cToken.balanceOfUnderlying(user);
+            asset.borrowBalance = cToken.borrowBalanceCurrent(user);
+            asset.membership = comptroller.checkMembership(user, cToken);
+            asset.exchangeRate = cToken.exchangeRateCurrent();
+            asset.underlyingPrice = comptroller.oracle().getUnderlyingPrice(cToken);
+            asset.collateralFactor = collateralFactorMantissa;
+
+            detailedAssets[index] = asset;
+        }
+
+        return (detailedAssets);
     }
 
     /**
      * @notice Returns the assets of the specified Fuse pool.
      * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
-     * @param pool The index of the Fuse pool.
-     * @return An array of cToken addresses, underlying names, underlying symbols, underlying decimals, and APRs (scaled by 1e18)
+     * @param comptroller The Comptroller contract of the Fuse pool.
+     * @return An array of Fuse pool assets.
      */
-    function getPoolAssetsWithData(uint256 pool) external returns (uint256[] memory, FuseAsset[] memory) {
-        Comptroller comptroller = Comptroller(pools[pool].comptroller);
+    function getPoolAssetsWithData(Comptroller comptroller) external returns (FusePoolAsset[] memory) {
+        CToken[] memory cTokens = comptroller.getAllMarkets();
+        return getPoolAssetsWithData(comptroller, cTokens, msg.sender);
+    }
 
-        uint256[] memory indexes = new uint256[](assets[pool].length);
-        FuseAsset[] memory detailedAssets = new FuseAsset[](assets[pool].length);
+    /**
+     * @dev Struct for a Fuse money market pool user.
+     */
+    struct FusePoolUser {
+        address account;
+        uint256 totalBorrow;
+        uint256 totalCollateral;
+        uint256 health;
+        FusePoolAsset[] assets;
+    }
 
-        for (uint256 i = 0; i < assets[pool].length; i++) {
-            FuseAsset memory asset;
-            CToken cToken = CToken(assets[pool][i]);
+    /**
+     * @notice Returns the users of the specified Fuse pool.
+     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @param comptroller The Comptroller contract of the Fuse pool.
+     * @return An array of Fuse pool users, the pool's close factor, and the pool's liquidation incentive.
+     */
+    function getPoolUsersWithData(Comptroller comptroller) external returns (FusePoolUser[] memory, uint256, uint256) {
+        address[] memory users = comptroller.getAllUsers();
+        FusePoolUser[] memory detailedUsers = new FusePoolUser[](users.length);
 
-            if (cToken.isCEther()) {
-                asset.underlyingName = "Ethereum";
-                asset.underlyingSymbol = "ETH";
-                asset.underlyingDecimal = 18;
-                asset.underlyingBalance = msg.sender.balance;
-            } else {
-                asset.underlyingToken = CErc20(assets[pool][i]).underlying();
-                ERC20Upgradeable underlying = ERC20Upgradeable(asset.underlyingToken);
-                asset.underlyingName = underlying.name();
-                asset.underlyingSymbol = underlying.symbol();
-                asset.underlyingDecimal = underlying.decimals();
-                asset.underlyingBalance = underlying.balanceOf(msg.sender);
+        for (uint256 i = 0; i < users.length; i++) {
+            uint256 totalBorrow = 0;
+            uint256 totalCollateral = 0;
+            FusePoolAsset[] memory assets = getPoolAssetsWithData(comptroller, comptroller.getAssetsIn(users[i]), users[i]);
+
+            for (uint256 j = 0; j < assets.length; j++) {
+                totalBorrow = totalBorrow.add(assets[i].borrowBalance);
+
+                if (assets[i].membership) {
+                    totalCollateral = totalCollateral.add(assets[i].supplyBalance.mul(assets[i].collateralFactor).div(1e18));
+                }
             }
 
-            asset.supplyRatesPerBlock = cToken.supplyRatePerBlock();
-            asset.borrowRatesPerBlock = cToken.borrowRatePerBlock();
-            asset.liquidity = cToken.getCash();
-            asset.totalBorrow = cToken.totalBorrowsCurrent();
-            asset.totalSupply = asset.liquidity.add(asset.totalBorrow).sub(cToken.totalReserves());
-            asset.supplyBalance = cToken.balanceOfUnderlying(msg.sender);
-            asset.borrowBalance = cToken.borrowBalanceCurrent(msg.sender);
-            asset.membership = comptroller.checkMembership(msg.sender, cToken);
+            detailedUsers[i] = FusePoolUser(users[i], totalBorrow, totalCollateral, totalCollateral.mul(1e18).div(totalBorrow), assets);
         }
 
-        return (indexes, detailedAssets);
+        return (detailedUsers, comptroller.closeFactorMantissa(), comptroller.liquidationIncentiveMantissa());
     }
 }

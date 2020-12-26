@@ -7,23 +7,16 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-pragma solidity 0.6.12;
+pragma solidity ^0.6.12;
 
 import "./CToken.sol";
-import "./PriceOracle.sol";
 
-/**
- * @title Compound's Comptroller Contract
- * @author Compound
- */
-interface Comptroller {
-    function admin() external view returns (address);
-    function oracle() external view returns (PriceOracle);
-    function closeFactorMantissa() external view returns (uint);
-    function liquidationIncentiveMantissa() external view returns (uint);
-    function markets(address cToken) external view returns (bool, uint);
-    function getAssetsIn(address account) external view returns (CToken[] memory);
-    function checkMembership(address account, CToken cToken) external view returns (bool);
-    function getAllMarkets() external view returns (CToken[] memory);
-    function getAllUsers() external view returns (address[] memory);
+interface PriceOracle {
+    /**
+      * @notice Get the underlying price of a cToken asset
+      * @param cToken The cToken to get the underlying price of
+      * @return The underlying asset price mantissa (scaled by 1e18).
+      *  Zero means the price is unavailable.
+      */
+    function getUnderlyingPrice(CToken cToken) external view returns (uint);
 }
