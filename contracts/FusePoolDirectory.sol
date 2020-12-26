@@ -186,6 +186,7 @@ contract FusePoolDirectory {
             asset.collateralFactor = collateralFactorMantissa;
 
             detailedAssets[index] = asset;
+            index++;
         }
 
         return (detailedAssets);
