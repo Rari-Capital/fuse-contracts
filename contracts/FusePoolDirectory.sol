@@ -127,8 +127,8 @@ contract FusePoolDirectory {
         uint256 borrowBalance;
         uint256 liquidity;
         bool membership;
-        uint256 exchangeRate;
-        uint256 underlyingPrice;
+        uint256 exchangeRate; // Price of cTokens in terms of underlying tokens
+        uint256 underlyingPrice; // Price of underlying tokens in ETH (scaled by 1e18)
         uint256 collateralFactor;
     }
 
@@ -231,14 +231,11 @@ contract FusePoolDirectory {
             FusePoolAsset[] memory assets = getPoolAssetsWithData(comptroller, comptroller.getAssetsIn(users[i]), users[i]);
 
             for (uint256 j = 0; j < assets.length; j++) {
-                totalBorrow = totalBorrow.add(assets[i].borrowBalance);
-
-                if (assets[i].membership) {
-                    totalCollateral = totalCollateral.add(assets[i].supplyBalance.mul(assets[i].collateralFactor).div(1e18));
-                }
+                totalBorrow = totalBorrow.add(assets[j].borrowBalance.mul(assets[j].underlyingPrice).div(1e18));
+                if (assets[j].membership) totalCollateral = totalCollateral.add(assets[j].supplyBalance.mul(assets[j].underlyingPrice).div(1e18).mul(assets[j].collateralFactor).div(1e18));
             }
 
-            uint256 health = totalCollateral.mul(1e18).div(totalBorrow);
+            uint256 health = totalBorrow > 0 ? totalCollateral.mul(1e18).div(totalBorrow) : 1e36;
             if (health <= maxHealth) arrayLength++;
         }
 
@@ -251,14 +248,11 @@ contract FusePoolDirectory {
             FusePoolAsset[] memory assets = getPoolAssetsWithData(comptroller, comptroller.getAssetsIn(users[i]), users[i]);
 
             for (uint256 j = 0; j < assets.length; j++) {
-                totalBorrow = totalBorrow.add(assets[i].borrowBalance);
-
-                if (assets[i].membership) {
-                    totalCollateral = totalCollateral.add(assets[i].supplyBalance.mul(assets[i].collateralFactor).div(1e18));
-                }
+                totalBorrow = totalBorrow.add(assets[j].borrowBalance.mul(assets[j].underlyingPrice).div(1e18));
+                if (assets[j].membership) totalCollateral = totalCollateral.add(assets[j].supplyBalance.mul(assets[j].underlyingPrice).div(1e18).mul(assets[j].collateralFactor).div(1e18));
             }
 
-            uint256 health = totalCollateral.mul(1e18).div(totalBorrow);
+            uint256 health = totalBorrow > 0 ? totalCollateral.mul(1e18).div(totalBorrow) : 1e36;
             if (health > maxHealth) continue;
             detailedUsers[index] = FusePoolUser(users[i], totalBorrow, totalCollateral, health, assets);
             index++;
