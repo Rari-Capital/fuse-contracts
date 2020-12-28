@@ -9,21 +9,12 @@
 
 pragma solidity 0.6.12;
 
-import "./CToken.sol";
-import "./PriceOracle.sol";
-
 /**
- * @title Compound's Comptroller Contract
- * @author Compound
+ * @title ComptrollerCore
+ * @dev Storage for the comptroller is at this address, while execution is delegated to the `comptrollerImplementation`.
+ * CTokens should reference this contract as their comptroller.
  */
-interface Comptroller {
-    function admin() external view returns (address);
-    function oracle() external view returns (PriceOracle);
-    function closeFactorMantissa() external view returns (uint);
-    function liquidationIncentiveMantissa() external view returns (uint);
-    function markets(address cToken) external view returns (bool, uint);
-    function getAssetsIn(address account) external view returns (CToken[] memory);
-    function checkMembership(address account, CToken cToken) external view returns (bool);
-    function getAllMarkets() external view returns (CToken[] memory);
-    function getAllUsers() external view returns (address[] memory);
+interface Unitroller {
+    function _setPendingImplementation(address newPendingImplementation) external returns (uint);
+    function _setPendingAdmin(address newPendingAdmin) external returns (uint);
 }
