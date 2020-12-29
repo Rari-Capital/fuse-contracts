@@ -62,7 +62,7 @@ contract FusePoolDirectory {
     /**
      * @dev Adds a new Fuse pool to the directory.
      * @param name The name of the pool.
-     * @param comptroller The pool's Comptroller contract address.
+     * @param comptroller The pool's Comptroller proxy contract address.
      * @param isPrivate Boolean indicating if the pool is private.
      * @return The index of the registered Fuse pool.
      */
@@ -74,7 +74,7 @@ contract FusePoolDirectory {
     /**
      * @dev Adds a new Fuse pool to the directory (without checking msg.sender).
      * @param name The name of the pool.
-     * @param comptroller The pool's Comptroller contract address.
+     * @param comptroller The pool's Comptroller proxy contract address.
      * @param isPrivate Boolean indicating if the pool is private.
      * @return The index of the registered Fuse pool.
      */
@@ -124,7 +124,7 @@ contract FusePoolDirectory {
      * @notice Returns arrays of all public Fuse pool indexes and data.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      */
-    function getPublicPools() external view returns (uint256[] memory, FusePool[] memory) {
+    function getPublicPools() public view returns (uint256[] memory, FusePool[] memory) {
         uint256 arrayLength = 0;
         for (uint256 i = 0; i < pools.length; i++) if (!pools[i].isPrivate) arrayLength++;
         uint256[] memory indexes = new uint256[](arrayLength);
@@ -181,7 +181,7 @@ contract FusePoolDirectory {
     /**
      * @notice Returns data on the specified assets of the specified Fuse pool.
      * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
-     * @param comptroller The Comptroller contract address of the Fuse pool.
+     * @param comptroller The Comptroller proxy contract address of the Fuse pool.
      * @param cTokens The cToken contract addresses of the assets to query.
      * @param user The user for which to get account data.
      * @return An array of Fuse pool assets.
@@ -241,7 +241,7 @@ contract FusePoolDirectory {
     /**
      * @notice Returns the assets of the specified Fuse pool.
      * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
-     * @param comptroller The Comptroller contract of the Fuse pool.
+     * @param comptroller The Comptroller proxy contract of the Fuse pool.
      * @return An array of Fuse pool assets.
      */
     function getPoolAssetsWithData(Comptroller comptroller) external returns (FusePoolAsset[] memory) {
@@ -263,11 +263,11 @@ contract FusePoolDirectory {
     /**
      * @notice Returns the users of the specified Fuse pool.
      * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
-     * @param comptroller The Comptroller contract of the Fuse pool.
-     * @param maxHealth The maximum health (scaled by 1e18) for which return data.
+     * @param comptroller The Comptroller proxy contract of the Fuse pool.
+     * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
      * @return An array of Fuse pool users, the pool's close factor, and the pool's liquidation incentive.
      */
-    function getPoolUsersWithData(Comptroller comptroller, uint256 maxHealth) external returns (FusePoolUser[] memory, uint256, uint256) {
+    function getPoolUsersWithData(Comptroller comptroller, uint256 maxHealth) public returns (FusePoolUser[] memory, uint256, uint256) {
         address[] memory users = comptroller.getAllUsers();
         uint256 arrayLength = 0;
 
@@ -305,5 +305,45 @@ contract FusePoolDirectory {
         }
 
         return (detailedUsers, comptroller.closeFactorMantissa(), comptroller.liquidationIncentiveMantissa());
+    }
+
+    /**
+     * @notice Returns the users of each public Fuse pool.
+     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
+     * @return An array of pools' Comptroller proxy addresses, an array of arrays of Fuse pool users, an array of pools' close factors, and an array of pools' liquidation incentives.
+     */
+    function getPublicPoolUsersWithData(uint256 maxHealth) external returns (address[] memory, FusePoolUser[][] memory, uint256[] memory, uint256[] memory) {
+        (, FusePool[] memory publicPools) = getPublicPools();
+        address[] memory comptrollers = new address[](publicPools.length);
+        FusePoolUser[][] memory users = new FusePoolUser[][](publicPools.length);
+        uint256[] memory closeFactors = new uint256[](publicPools.length);
+        uint256[] memory liquidationIncentives = new uint256[](publicPools.length);
+
+        for (uint256 i = 0; i < publicPools.length; i++) {
+            comptrollers[i] = publicPools[i].comptroller;
+            (users[i], closeFactors[i], liquidationIncentives[i]) = getPoolUsersWithData(Comptroller(publicPools[i].comptroller), maxHealth);
+        }
+
+        return (comptrollers, users, closeFactors, liquidationIncentives);
+    }
+
+    /**
+     * @notice Returns the users of the specified Fuse pools.
+     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @param comptrollers The Comptroller proxy contracts of the Fuse pools.
+     * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
+     * @return An array of arrays of Fuse pool users, an array of pools' close factors, and an array of pools' liquidation incentives.
+     */
+    function getPoolUsersWithData(Comptroller[] calldata comptrollers, uint256 maxHealth) external returns (FusePoolUser[][] memory, uint256[] memory, uint256[] memory) {
+        FusePoolUser[][] memory users = new FusePoolUser[][](comptrollers.length);
+        uint256[] memory closeFactors = new uint256[](comptrollers.length);
+        uint256[] memory liquidationIncentives = new uint256[](comptrollers.length);
+
+        for (uint256 i = 0; i < comptrollers.length; i++) {
+            (users[i], closeFactors[i], liquidationIncentives[i]) = getPoolUsersWithData(Comptroller(comptrollers[i]), maxHealth);
+        }
+
+        return (users, closeFactors, liquidationIncentives);
     }
 }

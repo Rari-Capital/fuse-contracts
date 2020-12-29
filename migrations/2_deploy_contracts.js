@@ -11,6 +11,7 @@ const { deployProxy, admin } = require('@openzeppelin/truffle-upgrades');
 require('dotenv').config();
 
 var FusePoolDirectory = artifacts.require("./FusePoolDirectory.sol");
+var FuseSafeLiquidator = artifacts.require("./FuseSafeLiquidator.sol");
 
 module.exports = async function(deployer, network, accounts) {
   // Validate .env
@@ -21,6 +22,9 @@ module.exports = async function(deployer, network, accounts) {
   
   // Deploy FusePoolDirectory
   await deployProxy(FusePoolDirectory, [], { deployer, unsafeAllowCustomTypes: true });
+  
+  // Deploy FuseSafeLiquidator
+  await deployProxy(FuseSafeLiquidator, [86], { deployer, unsafeAllowCustomTypes: true });
 
   // Live network: transfer ownership of deployed contracts from the deployer to the owner
   if (["live", "live-fork"].indexOf(network) >= 0) await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);
