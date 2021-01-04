@@ -47,14 +47,16 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
     }
 
     /**
-     * @notice Safely liquidate an unhealthy loan, confirming that at least `minSeizeAmount` in collateral is seized. 
+     * @notice Safely liquidate an unhealthy loan (using capital from the sender), confirming that at least `minOutputAmount` in collateral is seized (or outputted by exchange if applicable). 
      * @param borrower The borrower's Ethereum address.
      * @param repayAmount The amount to repay to liquidate the unhealthy loan.
      * @param cErc20 The borrowed cErc20 to repay.
      * @param cTokenCollateral The cToken collateral to be liquidated.
-     * @param minSeizeAmount The minimum amount of collateral to seize. Reverts if this condition is not met.
+     * @param minOutputAmount The minimum amount of collateral to seize (or the minimum exchange output if applicable) required for execution. Reverts if this condition is not met.
+     * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      */
-    function safeLiquidate(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minSeizeAmount) external {
+    function safeLiquidate(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minOutputAmount, address exchangeSeizedTo) external {
+        // Transfer tokens in, approve to cErc20, and liquidate borrow
         require(repayAmount > 0, "Repay amount (transaction value) must be greater than 0.");
         IERC20Upgradeable underlying = IERC20Upgradeable(cErc20.underlying());
         underlying.safeTransferFrom(msg.sender, address(this), repayAmount);
@@ -67,35 +69,89 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
         cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
 
-        if (cTokenCollateral.isCEther()) {
-            uint256 underlyingCollateralSeized = address(this).balance;
-            require(underlyingCollateralSeized >= minSeizeAmount, "Minimum collateral amount not seized.");
-            if (underlyingCollateralSeized > 0) {
-                (bool success, ) = msg.sender.call.value(underlyingCollateralSeized)("");
-                require(success, "Failed to transfer seized ETH collateral to msg.sender after liquidation.");
+        // Redeem and exchange seized collateral if necessary
+        if (exchangeSeizedTo != address(cTokenCollateral)) {
+            uint256 seizedCTokenAmount = cTokenCollateral.balanceOf(address(this));
+
+            if (seizedCTokenAmount > 0) {
+                uint256 redeemResult = cTokenCollateral.redeem(seizedCTokenAmount);
+                require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
+
+                if (exchangeSeizedTo == address(0)) {
+                    if (!cTokenCollateral.isCEther()) {
+                        address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
+                        UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, UNISWAP_V2_ROUTER_02.WETH()), address(this), block.timestamp);
+                    }
+                } else {
+                    if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minOutputAmount, array(UNISWAP_V2_ROUTER_02.WETH(), exchangeSeizedTo), address(this), block.timestamp);
+                    else {
+                        address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
+                        if (exchangeSeizedTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, exchangeSeizedTo), address(this), block.timestamp);
+                    }
+                }
+            }
+        }
+
+        // Transfer seized amount to sender
+        if (exchangeSeizedTo == address(0)) {
+            uint256 seizedOutputAmount = address(this).balance;
+            require(seizedOutputAmount >= minOutputAmount, "Minimum ETH output amount not satisfied.");
+
+            if (seizedOutputAmount > 0) {
+                (bool success, ) = msg.sender.call.value(seizedOutputAmount)("");
+                require(success, "Failed to transfer ETH to msg.sender after liquidation.");
             }
         } else {
-            IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(CErc20(address(cTokenCollateral)).underlying());
-            uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
-            require(underlyingCollateralSeized >= minSeizeAmount, "Minimum collateral amount not seized.");
-            if (underlyingCollateralSeized > 0) underlyingCollateral.safeTransfer(msg.sender, underlyingCollateralSeized);
+            IERC20Upgradeable exchangeSeizedToToken = IERC20Upgradeable(exchangeSeizedTo);
+            uint256 seizedOutputAmount = exchangeSeizedToToken.balanceOf(address(this));
+            require(seizedOutputAmount >= minOutputAmount, "Minimum token output amount not satified.");
+            if (seizedOutputAmount > 0) exchangeSeizedToToken.safeTransfer(msg.sender, seizedOutputAmount);
         }
     }
 
     /**
-     * @notice Safely liquidate an unhealthy loan, confirming that at least `minSeizeAmount` in collateral is seized. 
+     * @notice Safely liquidate an unhealthy loan (using capital from the sender), confirming that at least `minOutputAmount` in collateral is seized (or outputted by exchange if applicable). 
      * @param borrower The borrower's Ethereum address.
      * @param cEther The borrowed cEther contract to repay.
      * @param cErc20Collateral The cErc20 collateral contract to be liquidated.
-     * @param minSeizeAmount The minimum amount of seized collateral required for execution. Reverts if this condition is not met.
+     * @param minOutputAmount The minimum amount of collateral to seize (or the minimum exchange output if applicable) required for execution. Reverts if this condition is not met.
+     * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      */
-    function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minSeizeAmount) external payable {
+    function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo) external payable {
         require(msg.value > 0, "Repay amount (transaction value) must be greater than 0.");
         cEther.liquidateBorrow.value(msg.value)(borrower, CToken(cErc20Collateral));
-        IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(cErc20Collateral.underlying());
-        uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
-        require(underlyingCollateralSeized >= minSeizeAmount, "Minimum collateral amount not seized.");
-        if (underlyingCollateralSeized > 0) underlyingCollateral.safeTransfer(msg.sender, underlyingCollateralSeized);
+
+        // Redeem and exchange seized collateral if necessary
+        if (exchangeSeizedTo != address(cErc20Collateral)) {
+            uint256 seizedCTokenAmount = cErc20Collateral.balanceOf(address(this));
+
+            if (seizedCTokenAmount > 0) {
+                uint256 redeemResult = cErc20Collateral.redeem(seizedCTokenAmount);
+                require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
+                address underlyingCollateral = cErc20Collateral.underlying();
+
+                if (exchangeSeizedTo != underlyingCollateral) {
+                    if (exchangeSeizedTo == address(0)) UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, UNISWAP_V2_ROUTER_02.WETH()), address(this), block.timestamp);
+                    else UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, exchangeSeizedTo), address(this), block.timestamp);
+                }
+            }
+        }
+
+        // Transfer seized amount to sender
+        if (exchangeSeizedTo == address(0)) {
+            uint256 seizedOutputAmount = address(this).balance;
+            require(seizedOutputAmount >= minOutputAmount, "Minimum ETH output amount not satisfied.");
+
+            if (seizedOutputAmount > 0) {
+                (bool success, ) = msg.sender.call.value(seizedOutputAmount)("");
+                require(success, "Failed to transfer ETH to msg.sender after liquidation.");
+            }
+        } else {
+            IERC20Upgradeable exchangeSeizedToToken = IERC20Upgradeable(exchangeSeizedTo);
+            uint256 seizedOutputAmount = exchangeSeizedToToken.balanceOf(address(this));
+            require(seizedOutputAmount >= minOutputAmount, "Minimum token output amount not satified.");
+            if (seizedOutputAmount > 0) exchangeSeizedToToken.safeTransfer(msg.sender, seizedOutputAmount);
+        }
     }
 
     /**
@@ -254,6 +310,12 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         // Liquidate ETH borrow using flashloaned ETH
         cEther.liquidateBorrow.value(repayAmount)(borrower, CToken(cErc20Collateral));
 
+        // Redeem seized cTokens for underlying asset
+        uint256 seizedCTokenAmount = cErc20Collateral.balanceOf(address(this));
+        require(seizedCTokenAmount > 0, "No cTokens seized.");
+        uint256 redeemResult = cErc20Collateral.redeem(seizedCTokenAmount);
+        require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
+
         // Check underlying collateral seized
         IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(cErc20Collateral.underlying());
         uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
@@ -292,6 +354,12 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         // Liquidate ETH borrow using flashloaned ETH
         cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
 
+        // Redeem seized cTokens for underlying asset
+        uint256 seizedCTokenAmount = cTokenCollateral.balanceOf(address(this));
+        require(seizedCTokenAmount > 0, "No cTokens seized.");
+        uint256 redeemResult = cTokenCollateral.redeem(seizedCTokenAmount);
+        require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
+
         // Swap cTokenCollateral for cErc20 via Uniswap
         if (cTokenCollateral.isCEther()) {
             // Swap collateral ETH for tokens via Uniswap router
@@ -323,9 +391,10 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         // Exchange profit if necessary
         if (exchangeProfitTo != address(underlyingBorrow) && exchangeProfitTo != address(cTokenCollateral)) {
             if (exchangeProfitTo == address(0)) {
-                address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                uint256 inputAmount = IERC20Upgradeable(underlyingCollateral).balanceOf(address(this));
-                if (!cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactTokensForETH(inputAmount, minProfitAmount, array(underlyingCollateral, UNISWAP_V2_ROUTER_02.WETH()), address(this), block.timestamp);
+                if (!cTokenCollateral.isCEther()) {
+                    address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
+                    UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, UNISWAP_V2_ROUTER_02.WETH()), address(this), block.timestamp);
+                }
             } else {
                 if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(UNISWAP_V2_ROUTER_02.WETH(), exchangeProfitTo), address(this), block.timestamp);
                 else {

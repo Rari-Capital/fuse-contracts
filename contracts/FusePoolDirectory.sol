@@ -141,9 +141,23 @@ contract FusePoolDirectory {
     }
 
     /**
+     * @notice Returns arrays of all public Fuse pool indexes, data, total supply balances (in ETH), and total borrow balances (in ETH).
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPublicPoolsWithData() external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory) {
+        (uint256[] memory indexes, FusePool[] memory publicPools) = getPublicPools();
+        uint256[] memory totalSupply = new uint256[](publicPools.length);
+        uint256[] memory totalBorrow = new uint256[](publicPools.length);
+        for (uint256 i = 0; i < publicPools.length; i++) (totalSupply[i], totalBorrow[i]) = getPoolStats(Comptroller(publicPools[i].comptroller));
+        return (indexes, publicPools, totalSupply, totalBorrow);
+    }
+
+
+    /**
      * @notice Returns arrays of Fuse pool indexes and data created by `account`.
      */
-    function getPoolsByAccount(address account) external view returns (uint256[] memory, FusePool[] memory) {
+    function getPoolsByAccount(address account) public view returns (uint256[] memory, FusePool[] memory) {
         uint256[] memory indexes = new uint256[](_poolsByAccount[account].length);
         FusePool[] memory accountPools = new FusePool[](_poolsByAccount[account].length);
 
@@ -153,6 +167,42 @@ contract FusePoolDirectory {
         }
 
         return (indexes, accountPools);
+    }
+
+    /**
+     * @notice Returns arrays of the indexes of Fuse pools created by `account`, data, total supply balances (in ETH), and total borrow balances (in ETH).
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory) {
+        (uint256[] memory indexes, FusePool[] memory accountPools) = getPoolsByAccount(account);
+        uint256[] memory totalSupply = new uint256[](accountPools.length);
+        uint256[] memory totalBorrow = new uint256[](accountPools.length);
+        for (uint256 i = 0; i < accountPools.length; i++) (totalSupply[i], totalBorrow[i]) = getPoolStats(Comptroller(accountPools[i].comptroller));
+        return (indexes, accountPools, totalSupply, totalBorrow);
+    }
+
+    /**
+     * @notice Returns total supply balance (in ETH) and total borrow balance (in ETH) of a Fuse pool.
+     */
+    function getPoolStats(Comptroller comptroller) internal returns (uint256, uint256) {
+        uint256 totalBorrow = 0;
+        uint256 totalSupply = 0;
+        CToken[] memory cTokens = comptroller.getAllMarkets();
+        PriceOracle oracle = comptroller.oracle();
+
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            CToken cToken = cTokens[i];
+            (bool isListed, ) = comptroller.markets(address(cToken));
+            if (!isListed) continue;
+            uint256 assetTotalBorrow = cToken.totalBorrowsCurrent();
+            uint256 assetTotalSupply = cToken.getCash().add(assetTotalBorrow).sub(cToken.totalReserves());
+            uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
+            totalBorrow = totalBorrow.add(assetTotalBorrow.mul(underlyingPrice).div(1e18));
+            totalSupply = totalSupply.add(assetTotalSupply.mul(underlyingPrice).div(1e18));
+        }
+
+        return (totalBorrow, totalSupply);
     }
 
     /**
@@ -180,7 +230,8 @@ contract FusePoolDirectory {
 
     /**
      * @notice Returns data on the specified assets of the specified Fuse pool.
-     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param comptroller The Comptroller proxy contract address of the Fuse pool.
      * @param cTokens The cToken contract addresses of the assets to query.
      * @param user The user for which to get account data.
@@ -240,13 +291,13 @@ contract FusePoolDirectory {
 
     /**
      * @notice Returns the assets of the specified Fuse pool.
-     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param comptroller The Comptroller proxy contract of the Fuse pool.
      * @return An array of Fuse pool assets.
      */
     function getPoolAssetsWithData(Comptroller comptroller) external returns (FusePoolAsset[] memory) {
-        CToken[] memory cTokens = comptroller.getAllMarkets();
-        return getPoolAssetsWithData(comptroller, cTokens, msg.sender);
+        return getPoolAssetsWithData(comptroller, comptroller.getAllMarkets(), msg.sender);
     }
 
     /**
@@ -262,7 +313,8 @@ contract FusePoolDirectory {
 
     /**
      * @notice Returns the users of the specified Fuse pool.
-     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param comptroller The Comptroller proxy contract of the Fuse pool.
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
      * @return An array of Fuse pool users, the pool's close factor, and the pool's liquidation incentive.
@@ -309,7 +361,8 @@ contract FusePoolDirectory {
 
     /**
      * @notice Returns the users of each public Fuse pool.
-     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
      * @return An array of pools' Comptroller proxy addresses, an array of arrays of Fuse pool users, an array of pools' close factors, and an array of pools' liquidation incentives.
      */
@@ -330,7 +383,8 @@ contract FusePoolDirectory {
 
     /**
      * @notice Returns the users of the specified Fuse pools.
-     * @dev Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param comptrollers The Comptroller proxy contracts of the Fuse pools.
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
      * @return An array of arrays of Fuse pool users, an array of pools' close factors, and an array of pools' liquidation incentives.

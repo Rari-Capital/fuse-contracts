@@ -19,6 +19,7 @@ interface CToken {
 
     function isCEther() external view returns (bool);
 
+    function balanceOf(address owner) external returns (uint);
     function balanceOfUnderlying(address owner) external returns (uint);
     function borrowRatePerBlock() external view returns (uint);
     function supplyRatePerBlock() external view returns (uint);
@@ -26,4 +27,7 @@ interface CToken {
     function borrowBalanceCurrent(address account) external returns (uint);
     function exchangeRateCurrent() external returns (uint);
     function getCash() external view returns (uint);
+
+    function redeem(uint redeemTokens) external returns (uint);
+    function redeemUnderlying(uint redeemAmount) external returns (uint);
 }
