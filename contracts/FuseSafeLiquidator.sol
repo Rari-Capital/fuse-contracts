@@ -64,7 +64,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
         if (allowance < repayAmount) {
             if (repayAmount > 0 && allowance > 0) underlying.safeApprove(address(cErc20), 0);
-            underlying.safeApprove(address(cErc20), repayAmount);
+            underlying.safeApprove(address(cErc20), uint256(-1));
         }
 
         cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
@@ -333,7 +333,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
         if (allowance < underlyingCollateralSeized) {
             if (underlyingCollateralSeized > 0 && allowance > 0) underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, 0);
-            underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, underlyingCollateralSeized);
+            underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, uint256(-1));
         }
 
         // Swap collateral tokens for ETH via Uniswap router
@@ -356,7 +356,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
         if (allowance < repayAmount) {
             if (repayAmount > 0 && allowance > 0) underlyingBorrow.safeApprove(address(cErc20), 0);
-            underlyingBorrow.safeApprove(address(cErc20), repayAmount);
+            underlyingBorrow.safeApprove(address(cErc20), uint256(-1));
         }
 
         // Liquidate ETH borrow using flashloaned ETH
@@ -384,7 +384,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
             if (allowance < underlyingCollateralSeized) {
                 if (underlyingCollateralSeized > 0 && allowance > 0) underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, 0);
-                underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, underlyingCollateralSeized);
+                underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, uint256(-1));
             }
 
             // Swap collateral tokens for tokens via Uniswap router
