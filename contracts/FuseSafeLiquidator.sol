@@ -93,20 +93,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         }
 
         // Transfer seized amount to sender
-        if (exchangeSeizedTo == address(0)) {
-            uint256 seizedOutputAmount = address(this).balance;
-            require(seizedOutputAmount >= minOutputAmount, "Minimum ETH output amount not satisfied.");
-
-            if (seizedOutputAmount > 0) {
-                (bool success, ) = msg.sender.call.value(seizedOutputAmount)("");
-                require(success, "Failed to transfer ETH to msg.sender after liquidation.");
-            }
-        } else {
-            IERC20Upgradeable exchangeSeizedToToken = IERC20Upgradeable(exchangeSeizedTo);
-            uint256 seizedOutputAmount = exchangeSeizedToToken.balanceOf(address(this));
-            require(seizedOutputAmount >= minOutputAmount, "Minimum token output amount not satified.");
-            if (seizedOutputAmount > 0) exchangeSeizedToToken.safeTransfer(msg.sender, seizedOutputAmount);
-        }
+        transferSeizedFunds(exchangeSeizedTo, minOutputAmount);
     }
 
     /**
@@ -137,6 +124,16 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
             }
         }
 
+        // Transfer seized amount to sender
+        transferSeizedFunds(exchangeSeizedTo, minOutputAmount);
+    }
+
+    /**
+     * @dev Transfers seized funds to the sender.
+     * @param exchangeSeizedTo The address of the token to transfer.
+     * @param minOutputAmount The minimum amount to transfer.
+     */
+    function transferSeizedFunds(address exchangeSeizedTo, uint256 minOutputAmount) internal {
         // Transfer seized amount to sender
         if (exchangeSeizedTo == address(0)) {
             uint256 seizedOutputAmount = address(this).balance;
@@ -301,7 +298,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
             if (profit > 0) {
                 (bool success, ) = msg.sender.call.value(profit)("");
-                require(success, "Failed to transfer seized ETH collateral to msg.sender after liquidation.");
+                require(success, "Failed to transfer profited ETH to msg.sender after liquidation.");
             }
         } else {
             IERC20Upgradeable exchangeProfitToToken = IERC20Upgradeable(exchangeProfitTo);
@@ -311,6 +308,9 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         }
     }
 
+    /**
+     * @dev Liquidate unhealthy ETH borrow, exchange seized collateral, return flashloaned funds, and exchange profit.
+     */
     function postFlashLoanWeth(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount) private {
         // Unwrap WETH
         WETH.withdraw(repayAmount);
@@ -349,6 +349,9 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         if (exchangeProfitTo != address(0) && exchangeProfitTo != address(underlyingCollateral)) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(UNISWAP_V2_ROUTER_02.WETH(), exchangeProfitTo), address(this), block.timestamp);
     }
 
+    /**
+     * @dev Liquidate unhealthy token borrow, exchange seized collateral, return flashloaned funds, and exchange profit.
+     */
     function postFlashLoanTokens(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount) private {
         // Approve repayAmount to cErc20
         IERC20Upgradeable underlyingBorrow = IERC20Upgradeable(cErc20.underlying());
@@ -413,22 +416,31 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         }
     }
 
+    /**
+     * @dev Returns an array containing the parameters supplied.
+     */
     function array(uint256 a) private pure returns (uint256[] memory) {
-        uint256[] memory array = new uint256[](1);
-        array[0] = a;
-        return array;
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = a;
+        return arr;
     }
 
+    /**
+     * @dev Returns an array containing the parameters supplied.
+     */
     function array(address a) private pure returns (address[] memory) {
-        address[] memory array = new address[](1);
-        array[0] = a;
-        return array;
+        address[] memory arr = new address[](1);
+        arr[0] = a;
+        return arr;
     }
 
+    /**
+     * @dev Returns an array containing the parameters supplied.
+     */
     function array(address a, address b) private pure returns (address[] memory) {
-        address[] memory array = new address[](2);
-        array[0] = a;
-        array[1] = b;
-        return array;
+        address[] memory arr = new address[](2);
+        arr[0] = a;
+        arr[1] = b;
+        return arr;
     }
 }
