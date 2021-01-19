@@ -227,6 +227,22 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
             pair.swap(token0 == underlyingBorrow ? repayAmount : 0, token0 != underlyingBorrow ? repayAmount : 0, address(this), msg.data);
         }
         else revert("Invalid flashloan provider.");
+
+        // Exchange profit if necessary
+        if (exchangeProfitTo != address(underlyingBorrow)) {
+            if (exchangeProfitTo == address(0)) {
+                if (!cTokenCollateral.isCEther()) {
+                    address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
+                    UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, WETH_ADDRESS), address(this), block.timestamp);
+                }
+            } else {
+                if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
+                else {
+                    address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
+                    if (exchangeProfitTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, exchangeProfitTo), address(this), block.timestamp);
+                }
+            }
+        }
     }
 
     /**
@@ -248,6 +264,9 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
             pair.swap(token0 == WETH_ADDRESS ? repayAmount : 0, token0 != WETH_ADDRESS ? repayAmount : 0, address(this), msg.data);
         }
         else revert("Invalid flashloan provider.");
+
+        // Exchange profit if necessary
+        if (exchangeProfitTo != address(0) && exchangeProfitTo != address(underlyingCollateral)) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
     }
 
     /**
@@ -348,9 +367,6 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         require(flashLoanReturnAmount <= address(this).balance, "Flashloan return amount greater than ETH exchanged from seized collateral.");
         WETH.deposit.value(flashLoanReturnAmount)();
         require(WETH.transfer(msg.sender, flashLoanReturnAmount), "Failed to transfer WETH back to flashlender.");
-
-        // Exchange profit if necessary
-        if (exchangeProfitTo != address(0) && exchangeProfitTo != address(underlyingCollateral)) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
     }
 
     /**
@@ -402,22 +418,6 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         // Repay flashloan
         require(flashLoanReturnAmount <= underlyingBorrow.balanceOf(address(this)), "Repay amount greater than ETH exchanged from seized collateral.");
         underlyingBorrow.safeTransfer(msg.sender, flashLoanReturnAmount);
-
-        // Exchange profit if necessary
-        if (exchangeProfitTo != address(underlyingBorrow)) {
-            if (exchangeProfitTo == address(0)) {
-                if (!cTokenCollateral.isCEther()) {
-                    address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                    UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, WETH_ADDRESS), address(this), block.timestamp);
-                }
-            } else {
-                if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
-                else {
-                    address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                    if (exchangeProfitTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, exchangeProfitTo), address(this), block.timestamp);
-                }
-            }
-        }
     }
 
     /**
