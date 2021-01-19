@@ -86,7 +86,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
                     if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minOutputAmount, array(WETH_ADDRESS, exchangeSeizedTo), address(this), block.timestamp);
                     else {
                         address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                        if (exchangeSeizedTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, exchangeSeizedTo), address(this), block.timestamp);
+                        if (exchangeSeizedTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, WETH_ADDRESS, exchangeSeizedTo), address(this), block.timestamp);
                     }
                 }
             }
@@ -239,7 +239,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
                 if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
                 else {
                     address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                    if (exchangeProfitTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, exchangeProfitTo), address(this), block.timestamp);
+                    if (exchangeProfitTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
                 }
             }
         }
@@ -411,8 +411,8 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
             }
 
             // Swap collateral tokens for tokens via Uniswap router
-            if (exchangeProfitTo == address(underlyingBorrow)) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(underlyingCollateralSeized, flashLoanReturnAmount.add(minProfitAmount), array(address(underlyingCollateral), address(underlyingBorrow)), address(this), block.timestamp);
-            else UNISWAP_V2_ROUTER_02.swapTokensForExactTokens(flashLoanReturnAmount, underlyingCollateralSeized, array(address(underlyingCollateral), address(underlyingBorrow)), address(this), block.timestamp);
+            if (exchangeProfitTo == address(underlyingBorrow)) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(underlyingCollateralSeized, flashLoanReturnAmount.add(minProfitAmount), array(address(underlyingCollateral), WETH_ADDRESS, address(underlyingBorrow)), address(this), block.timestamp);
+            else UNISWAP_V2_ROUTER_02.swapTokensForExactTokens(flashLoanReturnAmount, underlyingCollateralSeized, array(address(underlyingCollateral), WETH_ADDRESS, address(underlyingBorrow)), address(this), block.timestamp);
         }
 
         // Repay flashloan
@@ -445,6 +445,17 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         address[] memory arr = new address[](2);
         arr[0] = a;
         arr[1] = b;
+        return arr;
+    }
+
+    /**
+     * @dev Returns an array containing the parameters supplied.
+     */
+    function array(address a, address b, address c) private pure returns (address[] memory) {
+        address[] memory arr = new address[](3);
+        arr[0] = a;
+        arr[1] = b;
+        arr[2] = c;
         return arr;
     }
 }
