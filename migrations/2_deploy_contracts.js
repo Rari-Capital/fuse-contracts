@@ -24,7 +24,7 @@ module.exports = async function(deployer, network, accounts) {
   await deployProxy(FusePoolDirectory, [], { deployer, unsafeAllowCustomTypes: true });
   
   // Deploy FuseSafeLiquidator
-  await deployProxy(FuseSafeLiquidator, [86], { deployer, unsafeAllowCustomTypes: true });
+  await deployProxy(FuseSafeLiquidator, [], { deployer, unsafeAllowCustomTypes: true });
 
   // Live network: transfer ownership of deployed contracts from the deployer to the owner
   if (["live", "live-fork"].indexOf(network) >= 0) await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);
