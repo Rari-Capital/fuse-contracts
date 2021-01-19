@@ -400,8 +400,8 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         }
 
         // Repay flashloan
-        require(repayAmount <= underlyingBorrow.balanceOf(address(this)), "Repay amount greater than ETH exchanged from seized collateral.");
-        underlyingBorrow.safeTransfer(msg.sender, repayAmount);
+        require(flashLoanReturnAmount <= underlyingBorrow.balanceOf(address(this)), "Repay amount greater than ETH exchanged from seized collateral.");
+        underlyingBorrow.safeTransfer(msg.sender, flashLoanReturnAmount);
 
         // Exchange profit if necessary
         if (exchangeProfitTo != address(underlyingBorrow)) {
