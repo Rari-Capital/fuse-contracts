@@ -141,7 +141,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
             if (seizedOutputAmount > 0) {
                 (bool success, ) = msg.sender.call.value(seizedOutputAmount)("");
-                require(success, "Failed to transfer ETH to msg.sender after liquidation.");
+                require(success, "Failed to transfer output ETH to msg.sender.");
             }
         } else {
             IERC20Upgradeable exchangeSeizedToToken = IERC20Upgradeable(exchangeSeizedTo);
@@ -243,6 +243,9 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
                 }
             }
         }
+
+        // Transfer profit to msg.sender
+        transferSeizedFunds(exchangeProfitTo, minProfitAmount);
     }
 
     /**
@@ -267,6 +270,9 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
 
         // Exchange profit if necessary
         if (exchangeProfitTo != address(0) && exchangeProfitTo != address(underlyingCollateral)) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
+
+        // Transfer profit to msg.sender
+        transferSeizedFunds(exchangeProfitTo, minProfitAmount);
     }
 
     /**
@@ -313,22 +319,6 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IFlashLoanRece
         // Liquidate unhealthy borrow, exchange seized collateral, return flashloaned funds, and exchange profit
         if (CToken(cToken).isCEther()) postFlashLoanWeth(borrower, repayAmount, CEther(cToken), CErc20(cTokenCollateral), minProfitAmount, exchangeProfitTo, flashLoanReturnAmount);
         else postFlashLoanTokens(borrower, repayAmount, CErc20(cToken), CToken(cTokenCollateral), minProfitAmount, exchangeProfitTo, flashLoanReturnAmount);
-
-        // Transfer profit to msg.sender
-        if (exchangeProfitTo == address(0)) {
-            uint256 profit = address(this).balance;
-            require(profit >= minProfitAmount, "Minimum profit amount condition not satisfied.");
-
-            if (profit > 0) {
-                (bool success, ) = msg.sender.call.value(profit)("");
-                require(success, "Failed to transfer profited ETH to msg.sender after liquidation.");
-            }
-        } else {
-            IERC20Upgradeable exchangeProfitToToken = IERC20Upgradeable(exchangeProfitTo);
-            uint256 profit = exchangeProfitToToken.balanceOf(address(this));
-            require(profit >= minProfitAmount, "Minimum profit amount condition not satisfied.");
-            if (profit > 0) exchangeProfitToToken.safeTransfer(msg.sender, profit);
-        }
     }
 
     /**
