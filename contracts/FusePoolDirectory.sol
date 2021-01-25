@@ -202,7 +202,7 @@ contract FusePoolDirectory {
             totalSupply = totalSupply.add(assetTotalSupply.mul(underlyingPrice).div(1e18));
         }
 
-        return (totalBorrow, totalSupply);
+        return (totalSupply, totalBorrow);
     }
 
     /**
