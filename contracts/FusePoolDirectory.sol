@@ -141,16 +141,26 @@ contract FusePoolDirectory {
     }
 
     /**
-     * @notice Returns arrays of all public Fuse pool indexes, data, total supply balances (in ETH), and total borrow balances (in ETH).
+     * @notice Returns arrays of all public Fuse pool indexes, data, total supply balances (in ETH), total borrow balances (in ETH), and booleans indicating if there was an error computing total supply and total borrow.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPublicPoolsWithData() external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory) {
+    function getPublicPoolsWithData() external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, bool[] memory) {
         (uint256[] memory indexes, FusePool[] memory publicPools) = getPublicPools();
         uint256[] memory totalSupply = new uint256[](publicPools.length);
         uint256[] memory totalBorrow = new uint256[](publicPools.length);
-        for (uint256 i = 0; i < publicPools.length; i++) (totalSupply[i], totalBorrow[i]) = getPoolStats(Comptroller(publicPools[i].comptroller));
-        return (indexes, publicPools, totalSupply, totalBorrow);
+        bool[] memory errored = new bool[](publicPools.length);
+        
+        for (uint256 i = 0; i < publicPools.length; i++) {
+            try this.getPoolStats(Comptroller(publicPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow) {
+                totalSupply[i] = _totalSupply;
+                totalBorrow[i] = _totalBorrow;
+            } catch {
+                errored[i] = true;
+            }
+        }
+
+        return (indexes, publicPools, totalSupply, totalBorrow, errored);
     }
 
 
@@ -174,18 +184,28 @@ contract FusePoolDirectory {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory) {
+    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, bool[] memory) {
         (uint256[] memory indexes, FusePool[] memory accountPools) = getPoolsByAccount(account);
         uint256[] memory totalSupply = new uint256[](accountPools.length);
         uint256[] memory totalBorrow = new uint256[](accountPools.length);
-        for (uint256 i = 0; i < accountPools.length; i++) (totalSupply[i], totalBorrow[i]) = getPoolStats(Comptroller(accountPools[i].comptroller));
-        return (indexes, accountPools, totalSupply, totalBorrow);
+        bool[] memory errored = new bool[](accountPools.length);
+
+        for (uint256 i = 0; i < accountPools.length; i++) {
+            try this.getPoolStats(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow) {
+                totalSupply[i] = _totalSupply;
+                totalBorrow[i] = _totalBorrow;
+            } catch {
+                errored[i] = true;
+            }
+        }
+
+        return (indexes, accountPools, totalSupply, totalBorrow, errored);
     }
 
     /**
      * @notice Returns total supply balance (in ETH) and total borrow balance (in ETH) of a Fuse pool.
      */
-    function getPoolStats(Comptroller comptroller) internal returns (uint256, uint256) {
+    function getPoolStats(Comptroller comptroller) external returns (uint256, uint256) {
         uint256 totalBorrow = 0;
         uint256 totalSupply = 0;
         CToken[] memory cTokens = comptroller.getAllMarkets();
