@@ -44,6 +44,42 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
     }
 
     /**
+     * @dev Internal function to approve unlimited tokens of `erc20Contract` to `to`.
+     */
+    function safeApprove(IERC20Upgradeable token, address to, uint256 minAmount) private {
+        uint256 allowance = token.allowance(address(this), to);
+
+        if (allowance < minAmount) {
+            if (allowance > 0) token.safeApprove(to, 0);
+            token.safeApprove(to, uint256(-1));
+        }
+    }
+
+    /**
+     * @dev Internal function to exchange the entire balance of `from` to at least `minOutputAmount` of `to`.
+     * @param from The input ERC20 token address (or the zero address if ETH) to exchange from.
+     * @param to The output ERC20 token address (or the zero address if ETH) to exchange to.
+     * @param minOutputAmount The minimum output amount of `to` necessary to complete the exchange without reversion.
+     */
+    function exchangeAllEthOrTokens(address from, address to, uint256 minOutputAmount) private {
+        if (to == from) return;
+
+        if (from == address(0)) {
+            // Exchange from ETH to tokens
+            UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
+        } else {
+            // Approve input tokens
+            IERC20Upgradeable fromToken = IERC20Upgradeable(from);
+            uint256 inputBalance = fromToken.balanceOf(address(this));
+            safeApprove(fromToken, UNISWAP_V2_ROUTER_02_ADDRESS, inputBalance);
+
+            // Exchange from tokens to ETH or tokens
+            if (to == address(0)) UNISWAP_V2_ROUTER_02.swapExactTokensForETH(inputBalance, minOutputAmount, array(from, WETH_ADDRESS), address(this), block.timestamp);
+            else UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(inputBalance, minOutputAmount, from == WETH_ADDRESS || to == WETH_ADDRESS ? array(from, to) : array(from, WETH_ADDRESS, to), address(this), block.timestamp); // Put WETH in the middle of the path if not already a part of the path
+        }
+    }
+
+    /**
      * @notice Safely liquidate an unhealthy loan (using capital from the sender), confirming that at least `minOutputAmount` in collateral is seized (or outputted by exchange if applicable). 
      * @param borrower The borrower's Ethereum address.
      * @param repayAmount The amount to repay to liquidate the unhealthy loan.
@@ -57,16 +93,10 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
         require(repayAmount > 0, "Repay amount (transaction value) must be greater than 0.");
         IERC20Upgradeable underlying = IERC20Upgradeable(cErc20.underlying());
         underlying.safeTransferFrom(msg.sender, address(this), repayAmount);
-        uint256 allowance = underlying.allowance(address(this), address(cErc20));
-
-        if (allowance < repayAmount) {
-            if (repayAmount > 0 && allowance > 0) underlying.safeApprove(address(cErc20), 0);
-            underlying.safeApprove(address(cErc20), uint256(-1));
-        }
-
+        safeApprove(underlying, address(cErc20), repayAmount);
         cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
 
-        // Redeem and exchange seized collateral if necessary
+        // Redeem seized cToken collateral if necessary
         if (exchangeSeizedTo != address(cTokenCollateral)) {
             uint256 seizedCTokenAmount = cTokenCollateral.balanceOf(address(this));
 
@@ -74,18 +104,8 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
                 uint256 redeemResult = cTokenCollateral.redeem(seizedCTokenAmount);
                 require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
 
-                if (exchangeSeizedTo == address(0)) {
-                    if (!cTokenCollateral.isCEther()) {
-                        address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                        UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, WETH_ADDRESS), address(this), block.timestamp);
-                    }
-                } else {
-                    if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minOutputAmount, array(WETH_ADDRESS, exchangeSeizedTo), address(this), block.timestamp);
-                    else {
-                        address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                        if (exchangeSeizedTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, WETH_ADDRESS, exchangeSeizedTo), address(this), block.timestamp);
-                    }
-                }
+                // Exchange redeemed collateral if necessary
+                exchangeAllEthOrTokens(cTokenCollateral.isCEther() ? address(0) : CErc20(address(cTokenCollateral)).underlying(), exchangeSeizedTo, minOutputAmount);
             }
         }
 
@@ -102,22 +122,20 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
      * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      */
     function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo) external payable {
+        // Liquidate ETH borrow
         require(msg.value > 0, "Repay amount (transaction value) must be greater than 0.");
         cEther.liquidateBorrow.value(msg.value)(borrower, CToken(cErc20Collateral));
 
-        // Redeem and exchange seized collateral if necessary
+        // Redeem seized cToken collateral if necessary
         if (exchangeSeizedTo != address(cErc20Collateral)) {
             uint256 seizedCTokenAmount = cErc20Collateral.balanceOf(address(this));
 
             if (seizedCTokenAmount > 0) {
                 uint256 redeemResult = cErc20Collateral.redeem(seizedCTokenAmount);
                 require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
-                address underlyingCollateral = cErc20Collateral.underlying();
 
-                if (exchangeSeizedTo != underlyingCollateral) {
-                    if (exchangeSeizedTo == address(0)) UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, WETH_ADDRESS), address(this), block.timestamp);
-                    else UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minOutputAmount, array(underlyingCollateral, exchangeSeizedTo), address(this), block.timestamp);
-                }
+                // Exchange redeemed collateral if necessary
+                exchangeAllEthOrTokens(cErc20Collateral.underlying(), exchangeSeizedTo, minOutputAmount);
             }
         }
 
@@ -191,18 +209,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
         pair.swap(token0 == underlyingBorrow ? repayAmount : 0, token0 != underlyingBorrow ? repayAmount : 0, address(this), msg.data);
 
         // Exchange profit if necessary
-        if (exchangeProfitTo == address(0)) {
-            if (!cTokenCollateral.isCEther()) {
-                address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                UNISWAP_V2_ROUTER_02.swapExactTokensForETH(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, WETH_ADDRESS), address(this), block.timestamp);
-            }
-        } else {
-            if (cTokenCollateral.isCEther()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
-            else {
-                address underlyingCollateral = CErc20(address(cTokenCollateral)).underlying();
-                if (exchangeProfitTo != underlyingCollateral) UNISWAP_V2_ROUTER_02.swapExactTokensForTokens(IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), minProfitAmount, array(underlyingCollateral, WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
-            }
-        }
+        exchangeAllEthOrTokens(cTokenCollateral.isCEther() ? address(0) : CErc20(address(cTokenCollateral)).underlying(), exchangeProfitTo, minProfitAmount);
 
         // Transfer profit to msg.sender
         transferSeizedFunds(exchangeProfitTo, minProfitAmount);
@@ -284,12 +291,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
         uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
 
         // Approve to Uniswap router
-        uint256 allowance = underlyingCollateral.allowance(address(this), UNISWAP_V2_ROUTER_02_ADDRESS);
-
-        if (allowance < underlyingCollateralSeized) {
-            if (underlyingCollateralSeized > 0 && allowance > 0) underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, 0);
-            underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, uint256(-1));
-        }
+        safeApprove(underlyingCollateral, UNISWAP_V2_ROUTER_02_ADDRESS, underlyingCollateralSeized);
 
         // Swap collateral tokens for ETH via Uniswap router
         if (exchangeProfitTo == address(underlyingCollateral)) UNISWAP_V2_ROUTER_02.swapTokensForExactETH(flashLoanReturnAmount, underlyingCollateralSeized, array(address(underlyingCollateral), WETH_ADDRESS), address(this), block.timestamp);
@@ -307,12 +309,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
     function postFlashLoanTokens(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount) private {
         // Approve repayAmount to cErc20
         IERC20Upgradeable underlyingBorrow = IERC20Upgradeable(cErc20.underlying());
-        uint256 allowance = underlyingBorrow.allowance(address(this), address(cErc20));
-
-        if (allowance < repayAmount) {
-            if (repayAmount > 0 && allowance > 0) underlyingBorrow.safeApprove(address(cErc20), 0);
-            underlyingBorrow.safeApprove(address(cErc20), uint256(-1));
-        }
+        safeApprove(underlyingBorrow, address(cErc20), repayAmount);
 
         // Liquidate ETH borrow using flashloaned ETH
         cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
@@ -339,12 +336,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
             uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
 
             // Approve to Uniswap router
-            allowance = underlyingCollateral.allowance(address(this), UNISWAP_V2_ROUTER_02_ADDRESS);
-
-            if (allowance < underlyingCollateralSeized) {
-                if (underlyingCollateralSeized > 0 && allowance > 0) underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, 0);
-                underlyingCollateral.safeApprove(UNISWAP_V2_ROUTER_02_ADDRESS, uint256(-1));
-            }
+            safeApprove(underlyingCollateral, address(cErc20), underlyingCollateralSeized);
 
             // Swap collateral tokens for WETH to be repaid via Uniswap router
             uint256 wethRequired = UniswapV2Library.getAmountsIn(UNISWAP_V2_FACTORY_ADDRESS, repayAmount, array(WETH_ADDRESS, address(underlyingBorrow)))[0];
