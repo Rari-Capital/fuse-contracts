@@ -25,7 +25,7 @@ module.exports = async function(deployer, network, accounts) {
   await deployProxy(FusePoolDirectory, [], { deployer, unsafeAllowCustomTypes: true });
   
   // Deploy FuseSafeLiquidator
-  await deployProxy(FuseSafeLiquidator, [], { deployer, unsafeAllowCustomTypes: true });
+  await deployer.deploy(FuseSafeLiquidator);
   
   // Deploy FuseFeeDistributor
   await deployProxy(FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer, unsafeAllowCustomTypes: true });
