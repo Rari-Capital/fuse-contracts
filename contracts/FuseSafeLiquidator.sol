@@ -94,7 +94,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
         IERC20Upgradeable underlying = IERC20Upgradeable(cErc20.underlying());
         underlying.safeTransferFrom(msg.sender, address(this), repayAmount);
         safeApprove(underlying, address(cErc20), repayAmount);
-        cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
+        require(cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral) == 0, "Liquidation failed.");
 
         // Redeem seized cToken collateral if necessary
         if (exchangeSeizedTo != address(cTokenCollateral)) {
@@ -312,7 +312,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
         safeApprove(underlyingBorrow, address(cErc20), repayAmount);
 
         // Liquidate ETH borrow using flashloaned ETH
-        cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral);
+        require(cErc20.liquidateBorrow(borrower, repayAmount, cTokenCollateral) == 0, "Liquidation failed.");
 
         // Redeem seized cTokens for underlying asset
         uint256 seizedCTokenAmount = cTokenCollateral.balanceOf(address(this));
