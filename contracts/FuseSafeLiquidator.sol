@@ -336,7 +336,7 @@ contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Call
             uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
 
             // Approve to Uniswap router
-            safeApprove(underlyingCollateral, address(cErc20), underlyingCollateralSeized);
+            safeApprove(underlyingCollateral, UNISWAP_V2_ROUTER_02_ADDRESS, underlyingCollateralSeized);
 
             // Swap collateral tokens for WETH to be repaid via Uniswap router
             uint256 wethRequired = UniswapV2Library.getAmountsIn(UNISWAP_V2_FACTORY_ADDRESS, repayAmount, array(WETH_ADDRESS, address(underlyingBorrow)))[0];
