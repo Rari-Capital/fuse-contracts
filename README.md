@@ -4,7 +4,7 @@ This repository contains the Solidity source code for the smart contracts behind
 
 ## How it works
 
-Fuse by Rari Capital is a decentralized money market creator, directory, and liquidator based on the Ethereum blockchain. Find out more about Fuse and Rari Capital at [rari.capital](https://rari.capital).
+Fuse by Rari Capital is a decentralized money market creator, directory, and liquidator based on the Ethereum blockchain. A high-level overview of how Fuse works is available in [`CONCEPT.md`](CONCEPT.md). Find out more about Fuse and Rari Capital at [rari.capital](https://rari.capital).
 
 ## Installation (for development and deployment)
 
