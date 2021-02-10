@@ -12,7 +12,6 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
@@ -32,16 +31,9 @@ import "./external/uniswap/UniswapV2Library.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice FuseSafeLiquidator safely liquidates unhealthy borrowers (with flashloan support).
  */
-contract FuseSafeLiquidator is Initializable, OwnableUpgradeable, IUniswapV2Callee {
+contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
-
-    /**
-     * @dev Constructor that initializes the owner to `msg.sender`.
-     */
-    function initialize() public initializer {
-        __Ownable_init();
-    }
 
     /**
      * @dev Internal function to approve unlimited tokens of `erc20Contract` to `to`.
