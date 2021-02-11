@@ -65,5 +65,5 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     /**
      * @dev Receives ETH fees.
      */
-    receive() external payable { }
+    receive() external payable {}
 }
