@@ -27,6 +27,7 @@ import "./external/uniswap/UniswapV2Library.sol";
  * @title FusePoolDirectory
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice FuseSafeLiquidator safely liquidates unhealthy borrowers (with flashloan support).
+ * @dev Do not transfer ETH or tokens directly to this address. Only send ETH here when using a method, and only approve tokens for transfer to here when using a method. Direct ETH transfers will be rejected and direct token transfers will be lost.
  */
 contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     using SafeMathUpgradeable for uint256;
@@ -229,8 +230,11 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
     /**
      * @dev Receives ETH from liquidations and flashloans.
+     * Requires that `msg.sender` is a CToken or the Uniswap V2 Router.
      */
-    receive() external payable { }
+    receive() external payable {
+        require(msg.sender == UNISWAP_V2_ROUTER_02_ADDRESS || CToken(msg.sender).isCToken(), "Sender is not a CToken or the Uniswap V2 Router.");
+    }
 
     /**
      * @dev Callback function for Uniswap flashloans.
