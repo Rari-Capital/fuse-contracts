@@ -338,6 +338,7 @@ contract FusePoolDirectory {
      */
     struct FusePoolUser {
         address account;
+        address referrer;
         uint256 totalBorrow;
         uint256 totalCollateral;
         uint256 health;
@@ -385,7 +386,11 @@ contract FusePoolDirectory {
 
             uint256 health = totalBorrow > 0 ? totalCollateral.mul(1e18).div(totalBorrow) : 1e36;
             if (health > maxHealth) continue;
-            detailedUsers[index] = FusePoolUser(users[i], totalBorrow, totalCollateral, health, assets);
+
+            // * Hide referrer from public function
+            address referrer = address(0);
+
+            detailedUsers[index] = FusePoolUser(users[i], referrer, totalBorrow, totalCollateral, health, assets);
             index++;
         }
 
