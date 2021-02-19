@@ -36,5 +36,5 @@ interface Comptroller {
     function _become(Unitroller unitroller) external;
 
     function getAllMarkets() external view returns (CToken[] memory);
-    function getAllUsers() external view returns (address[] memory);
+    function getAllBorrowers() external view returns (address[] memory);
 }
