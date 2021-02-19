@@ -19,7 +19,7 @@ interface CToken {
 
     function isCEther() external view returns (bool);
 
-    function balanceOf(address owner) external returns (uint);
+    function balanceOf(address owner) external view returns (uint);
     function balanceOfUnderlying(address owner) external returns (uint);
     function borrowRatePerBlock() external view returns (uint);
     function supplyRatePerBlock() external view returns (uint);

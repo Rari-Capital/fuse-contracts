@@ -429,4 +429,88 @@ contract FusePoolDirectory {
 
         return (users, closeFactors, liquidationIncentives);
     }
+
+    /**
+     * @notice Returns arrays of Fuse pool indexes and data supplied to by `account`.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     */
+    function getPoolsBySupplier(address account) public view returns (uint256[] memory, FusePool[] memory) {
+        uint256 arrayLength = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            Comptroller comptroller = Comptroller(pools[i].comptroller);
+
+            if (comptroller.suppliers(account)) {
+                CToken[] memory allMarkets = comptroller.getAllMarkets();
+
+                for (uint256 j = 0; j < allMarkets.length; j++) if (allMarkets[j].balanceOf(account) > 0) {
+                    arrayLength++;
+                    break;
+                }
+            }
+        }
+
+        uint256[] memory indexes = new uint256[](arrayLength);
+        FusePool[] memory accountPools = new FusePool[](arrayLength);
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            Comptroller comptroller = Comptroller(pools[i].comptroller);
+
+            if (comptroller.suppliers(account)) {
+                CToken[] memory allMarkets = comptroller.getAllMarkets();
+
+                for (uint256 j = 0; j < allMarkets.length; j++) if (allMarkets[j].balanceOf(account) > 0) {
+                    indexes[index] = i;
+                    accountPools[index] = pools[i];
+                    index++;
+                    break;
+                }
+            }
+        }
+
+        return (indexes, accountPools);
+    }
+
+    /**
+     * @notice Returns arrays of the indexes of Fuse pools supplied to by `account`, data, total supply balances (in ETH), and total borrow balances (in ETH).
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPoolsBySupplierWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, bool[] memory) {
+        (uint256[] memory indexes, FusePool[] memory accountPools) = getPoolsBySupplier(account);
+        uint256[] memory totalSupply = new uint256[](accountPools.length);
+        uint256[] memory totalBorrow = new uint256[](accountPools.length);
+        bool[] memory errored = new bool[](accountPools.length);
+
+        for (uint256 i = 0; i < accountPools.length; i++) {
+            try this.getPoolStats(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow) {
+                totalSupply[i] = _totalSupply;
+                totalBorrow[i] = _totalBorrow;
+            } catch {
+                errored[i] = true;
+            }
+        }
+
+        return (indexes, accountPools, totalSupply, totalBorrow, errored);
+    }
+
+    /**
+     * @dev Maps Ethereum accounts to arrays of Fuse pool Comptroller proxy contract addresses.
+     */
+    mapping(address => address[]) private _bookmarks;
+
+    /**
+     * @notice Returns arrays of Fuse pool Unitroller (Comptroller proxy) contract addresses bookmarked by `account`.
+     */
+    function getBookmarks(address account) external view returns (address[] memory) {
+        return _bookmarks[account];
+    }
+
+    /**
+     * @notice Bookmarks a Fuse pool Unitroller (Comptroller proxy) contract addresses.
+     */
+    function bookmarkPool(address comptroller) external {
+        _bookmarks[msg.sender].push(comptroller);
+    }
 }
