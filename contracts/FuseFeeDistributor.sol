@@ -63,6 +63,34 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @dev Minimum borrow balance (in ETH) per user per Fuse pool asset (only checked on new borrows, not redemptions).
+     */
+    uint256 public minBorrowEth;
+
+    /**
+     * @dev Maximum supply balance (in ETH) per user per Fuse pool asset.
+     */
+    uint256 public maxSupplyEth;
+
+    /**
+     * @dev Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
+     */
+    uint256 public maxUtilizationRate;
+
+    /**
+     * @dev Sets the proportion of Fuse pool interest taken as a protocol fee.
+     * @param _minBorrowEth Minimum borrow balance (in ETH) per user per Fuse pool asset (only checked on new borrows, not redemptions).
+     * @param _maxSupplyEth Maximum supply balance (in ETH) per user per Fuse pool asset.
+     * @param _maxUtilizationRate Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
+     */
+    function setPoolLimits(uint256 _minBorrowEth, uint256 _maxSupplyEth, uint256 _maxUtilizationRate) external onlyOwner {
+        require(_maxUtilizationRate <= 1e18, "Maximum utilization rate cannot be more than 100%.");
+        minBorrowEth = _minBorrowEth;
+        maxSupplyEth = _maxSupplyEth;
+        maxUtilizationRate = _maxUtilizationRate;
+    }
+
+    /**
      * @dev Receives ETH fees.
      */
     receive() external payable { }
