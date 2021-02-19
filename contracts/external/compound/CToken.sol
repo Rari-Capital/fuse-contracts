@@ -17,6 +17,7 @@ pragma solidity 0.6.12;
 interface CToken {
     function totalReserves() external view returns (uint);
 
+    function isCToken() external view returns (bool);
     function isCEther() external view returns (bool);
 
     function balanceOf(address owner) external view returns (uint);
