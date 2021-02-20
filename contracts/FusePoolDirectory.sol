@@ -522,26 +522,45 @@ contract FusePoolDirectory {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getUserSummary(address account) external returns (uint256, uint256) {
+    function getUserSummary(address account) external returns (uint256, uint256, bool) {
+        uint256 borrowBalance = 0;
+        uint256 supplyBalance = 0;
+        bool errors = false;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            try this.getPoolUserSummary(Comptroller(pools[i].comptroller), account) returns (uint256 poolSupplyBalance, uint256 poolBorrowBalance) {
+                supplyBalance = supplyBalance.add(poolSupplyBalance);
+                borrowBalance = borrowBalance.add(poolBorrowBalance);
+            } catch {
+                errors = true;
+            }
+        }
+
+        return (supplyBalance, borrowBalance, errors);
+    }
+
+    /**
+     * @notice Returns the total supply balance (in ETH) and the total borrow balance (in ETH) of the caller in the specified pool.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPoolUserSummary(Comptroller comptroller, address account) external returns (uint256, uint256) {
         uint256 borrowBalance = 0;
         uint256 supplyBalance = 0;
 
-        for (uint256 i = 0; i < pools.length; i++) {
-            Comptroller comptroller = Comptroller(pools[i].comptroller);
-            if (!comptroller.suppliers(account)) continue;
-            CToken[] memory cTokens = comptroller.getAllMarkets();
-            PriceOracle oracle = comptroller.oracle();
+        if (!comptroller.suppliers(account)) return (0, 0);
+        CToken[] memory cTokens = comptroller.getAllMarkets();
+        PriceOracle oracle = comptroller.oracle();
 
-            for (uint256 j = 0; j < cTokens.length; i++) if (cTokens[j].balanceOf(account) > 0) {
-                CToken cToken = cTokens[i];
-                (bool isListed, ) = comptroller.markets(address(cToken));
-                if (!isListed) continue;
-                uint256 assetBorrowBalance = cToken.borrowBalanceCurrent(account);
-                uint256 assetSupplyBalance = cToken.balanceOfUnderlying(account);
-                uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
-                borrowBalance = borrowBalance.add(assetBorrowBalance.mul(underlyingPrice).div(1e18));
-                supplyBalance = supplyBalance.add(assetSupplyBalance.mul(underlyingPrice).div(1e18));
-            }
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            CToken cToken = cTokens[i];
+            (bool isListed, ) = comptroller.markets(address(cToken));
+            if (!isListed) continue;
+            uint256 assetBorrowBalance = cToken.borrowBalanceCurrent(account);
+            uint256 assetSupplyBalance = cToken.balanceOfUnderlying(account);
+            uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
+            borrowBalance = borrowBalance.add(assetBorrowBalance.mul(underlyingPrice).div(1e18));
+            supplyBalance = supplyBalance.add(assetSupplyBalance.mul(underlyingPrice).div(1e18));
         }
 
         return (supplyBalance, borrowBalance);
