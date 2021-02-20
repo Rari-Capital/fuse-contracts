@@ -151,26 +151,30 @@ contract FusePoolDirectory {
     }
 
     /**
-     * @notice Returns arrays of all public Fuse pool indexes, data, total supply balances (in ETH), total borrow balances (in ETH), and booleans indicating if there was an error computing total supply and total borrow.
+     * @notice Returns arrays of all public Fuse pool indexes, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPublicPoolsWithData() external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, bool[] memory) {
+    function getPublicPoolsWithData() external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePool[] memory publicPools) = getPublicPools();
         uint256[] memory totalSupply = new uint256[](publicPools.length);
         uint256[] memory totalBorrow = new uint256[](publicPools.length);
+        address[][] memory underlyingTokens = new address[][](publicPools.length);
+        string[][] memory underlyingSymbols = new string[][](publicPools.length);
         bool[] memory errored = new bool[](publicPools.length);
         
         for (uint256 i = 0; i < publicPools.length; i++) {
-            try this.getPoolStats(Comptroller(publicPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow) {
+            try this.getPoolSummary(Comptroller(publicPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
                 totalSupply[i] = _totalSupply;
                 totalBorrow[i] = _totalBorrow;
+                underlyingTokens[i] = _underlyingTokens;
+                underlyingSymbols[i] = _underlyingSymbols;
             } catch {
                 errored[i] = true;
             }
         }
 
-        return (indexes, publicPools, totalSupply, totalBorrow, errored);
+        return (indexes, publicPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
     }
 
     /**
@@ -189,35 +193,41 @@ contract FusePoolDirectory {
     }
 
     /**
-     * @notice Returns arrays of the indexes of Fuse pools created by `account`, data, total supply balances (in ETH), and total borrow balances (in ETH).
+     * @notice Returns arrays of the indexes of Fuse pools created by `account`, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, bool[] memory) {
+    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePool[] memory accountPools) = getPoolsByAccount(account);
         uint256[] memory totalSupply = new uint256[](accountPools.length);
         uint256[] memory totalBorrow = new uint256[](accountPools.length);
+        address[][] memory underlyingTokens = new address[][](accountPools.length);
+        string[][] memory underlyingSymbols = new string[][](accountPools.length);
         bool[] memory errored = new bool[](accountPools.length);
 
         for (uint256 i = 0; i < accountPools.length; i++) {
-            try this.getPoolStats(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow) {
+            try this.getPoolSummary(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
                 totalSupply[i] = _totalSupply;
                 totalBorrow[i] = _totalBorrow;
+                underlyingTokens[i] = _underlyingTokens;
+                underlyingSymbols[i] = _underlyingSymbols;
             } catch {
                 errored[i] = true;
             }
         }
 
-        return (indexes, accountPools, totalSupply, totalBorrow, errored);
+        return (indexes, accountPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
     }
 
     /**
-     * @notice Returns total supply balance (in ETH) and total borrow balance (in ETH) of a Fuse pool.
+     * @notice Returns total supply balance (in ETH), total borrow balance (in ETH), underlying token addresses, and underlying token symbols of a Fuse pool.
      */
-    function getPoolStats(Comptroller comptroller) external returns (uint256, uint256) {
+    function getPoolSummary(Comptroller comptroller) external returns (uint256, uint256, address[] memory, string[] memory) {
         uint256 totalBorrow = 0;
         uint256 totalSupply = 0;
         CToken[] memory cTokens = comptroller.getAllMarkets();
+        address[] memory underlyingTokens = new address[](cTokens.length);
+        string[] memory underlyingSymbols = new string[](cTokens.length);
         PriceOracle oracle = comptroller.oracle();
 
         for (uint256 i = 0; i < cTokens.length; i++) {
@@ -229,9 +239,17 @@ contract FusePoolDirectory {
             uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
             totalBorrow = totalBorrow.add(assetTotalBorrow.mul(underlyingPrice).div(1e18));
             totalSupply = totalSupply.add(assetTotalSupply.mul(underlyingPrice).div(1e18));
+
+            if (cToken.isCEther()) {
+                underlyingTokens[i] = address(0);
+                underlyingSymbols[i] = "ETH";
+            } else {
+                underlyingTokens[i] = CErc20(address(cToken)).underlying();
+                underlyingSymbols[i] = ERC20Upgradeable(underlyingTokens[i]).symbol();
+            }
         }
 
-        return (totalSupply, totalBorrow);
+        return (totalSupply, totalBorrow, underlyingTokens, underlyingSymbols);
     }
 
     /**
@@ -473,26 +491,60 @@ contract FusePoolDirectory {
     }
 
     /**
-     * @notice Returns arrays of the indexes of Fuse pools supplied to by `account`, data, total supply balances (in ETH), and total borrow balances (in ETH).
+     * @notice Returns arrays of the indexes of Fuse pools supplied to by `account`, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPoolsBySupplierWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, bool[] memory) {
+    function getPoolsBySupplierWithData(address account) external returns (uint256[] memory, FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePool[] memory accountPools) = getPoolsBySupplier(account);
         uint256[] memory totalSupply = new uint256[](accountPools.length);
         uint256[] memory totalBorrow = new uint256[](accountPools.length);
+        address[][] memory underlyingTokens = new address[][](accountPools.length);
+        string[][] memory underlyingSymbols = new string[][](accountPools.length);
         bool[] memory errored = new bool[](accountPools.length);
 
         for (uint256 i = 0; i < accountPools.length; i++) {
-            try this.getPoolStats(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow) {
+            try this.getPoolSummary(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
                 totalSupply[i] = _totalSupply;
                 totalBorrow[i] = _totalBorrow;
+                underlyingTokens[i] = _underlyingTokens;
+                underlyingSymbols[i] = _underlyingSymbols;
             } catch {
                 errored[i] = true;
             }
         }
 
-        return (indexes, accountPools, totalSupply, totalBorrow, errored);
+        return (indexes, accountPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+    }
+
+    /**
+     * @notice Returns the total supply balance (in ETH) and the total borrow balance (in ETH) of the caller across all pools.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getUserSummary(address account) external returns (uint256, uint256) {
+        uint256 borrowBalance = 0;
+        uint256 supplyBalance = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            Comptroller comptroller = Comptroller(pools[i].comptroller);
+            if (!comptroller.suppliers(account)) continue;
+            CToken[] memory cTokens = comptroller.getAllMarkets();
+            PriceOracle oracle = comptroller.oracle();
+
+            for (uint256 j = 0; j < cTokens.length; i++) if (cTokens[j].balanceOf(account) > 0) {
+                CToken cToken = cTokens[i];
+                (bool isListed, ) = comptroller.markets(address(cToken));
+                if (!isListed) continue;
+                uint256 assetBorrowBalance = cToken.borrowBalanceCurrent(account);
+                uint256 assetSupplyBalance = cToken.balanceOfUnderlying(account);
+                uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
+                borrowBalance = borrowBalance.add(assetBorrowBalance.mul(underlyingPrice).div(1e18));
+                supplyBalance = supplyBalance.add(assetSupplyBalance.mul(underlyingPrice).div(1e18));
+            }
+        }
+
+        return (supplyBalance, borrowBalance);
     }
 
     /**
