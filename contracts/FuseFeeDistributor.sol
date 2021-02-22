@@ -28,6 +28,8 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         require(_interestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
         __Ownable_init();
         interestFeeRate = _interestFeeRate;
+        maxSupplyEth = uint256(-1);
+        maxUtilizationRate = 1e18;
     }
 
     /**
