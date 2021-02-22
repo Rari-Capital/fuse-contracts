@@ -15,6 +15,9 @@ pragma solidity 0.6.12;
  * @author Compound
  */
 interface CToken {
+    function adminFeeMantissa() external view returns (uint256);
+    function fuseFeeMantissa() external view returns (uint256);
+    function reserveFactorMantissa() external view returns (uint256);
     function totalReserves() external view returns (uint);
 
     function isCToken() external view returns (bool);

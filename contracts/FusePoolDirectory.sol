@@ -273,6 +273,9 @@ contract FusePoolDirectory {
         uint256 exchangeRate; // Price of cTokens in terms of underlying tokens
         uint256 underlyingPrice; // Price of underlying tokens in ETH (scaled by 1e18)
         uint256 collateralFactor;
+        uint256 reserveFactor;
+        uint256 adminFee;
+        uint256 fuseFee;
     }
 
     /**
@@ -328,6 +331,9 @@ contract FusePoolDirectory {
             asset.exchangeRate = cToken.exchangeRateCurrent();
             asset.underlyingPrice = comptroller.oracle().getUnderlyingPrice(cToken);
             asset.collateralFactor = collateralFactorMantissa;
+            asset.reserveFactor = cToken.reserveFactorMantissa();
+            asset.adminFee = cToken.adminFeeMantissa();
+            asset.fuseFee = cToken.fuseFeeMantissa();
 
             detailedAssets[index] = asset;
             index++;
