@@ -10,6 +10,7 @@ require('dotenv').config();
 var FusePoolDirectory = artifacts.require("./FusePoolDirectory.sol");
 var FuseSafeLiquidator = artifacts.require("./FuseSafeLiquidator.sol");
 var FuseFeeDistributor = artifacts.require("./FuseFeeDistributor.sol");
+var FusePoolLens = artifacts.require("./FusePoolLens.sol");
 
 module.exports = async function(deployer, network, accounts) {
   // Validate .env
@@ -25,7 +26,10 @@ module.exports = async function(deployer, network, accounts) {
   await deployer.deploy(FuseSafeLiquidator);
   
   // Deploy FuseFeeDistributor
-  await deployProxy(FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer, unsafeAllowCustomTypes: true });
+  await deployProxy(FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer });
+  
+  // Deploy FusePoolLens
+  await deployProxy(FusePoolLens, [FusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
 
   // Live network: transfer ownership of deployed contracts from the deployer to the owner
   if (["live", "live-fork"].indexOf(network) >= 0) await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);

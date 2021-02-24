@@ -7,6 +7,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
@@ -25,13 +26,13 @@ import "./FusePoolDirectory.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice FusePoolLens is a lens for Fuse money market pools.
  */
-contract FusePoolLens {
+contract FusePoolLens is Initializable {
     using SafeMathUpgradeable for uint256;
 
     /**
      * @notice Constructor to set the `FusePoolDirectory` contract object.
      */
-    constructor (FusePoolDirectory _directory) public {
+    function initialize(FusePoolDirectory _directory) public initializer {
         require(address(_directory) != address(0), "FusePoolDirectory instance cannot be the zero address.");
         directory = _directory;
     }
