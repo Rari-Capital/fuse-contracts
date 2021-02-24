@@ -14,6 +14,7 @@ import "./external/compound/Comptroller.sol";
 import "./external/compound/PriceOracle.sol";
 import "./external/compound/CToken.sol";
 import "./external/compound/CErc20.sol";
+import "./external/compound/MasterPriceOracle.sol";
 
 import "./FusePoolDirectory.sol";
 
@@ -145,6 +146,7 @@ contract FusePoolLens {
         bool membership;
         uint256 exchangeRate; // Price of cTokens in terms of underlying tokens
         uint256 underlyingPrice; // Price of underlying tokens in ETH (scaled by 1e18)
+        address oracle;
         uint256 collateralFactor;
         uint256 reserveFactor;
         uint256 adminFee;
@@ -170,6 +172,7 @@ contract FusePoolLens {
 
         FusePoolAsset[] memory detailedAssets = new FusePoolAsset[](arrayLength);
         uint256 index = 0;
+        PriceOracle oracle = comptroller.oracle();
 
         for (uint256 i = 0; i < cTokens.length; i++) {
             (bool isListed, uint256 collateralFactorMantissa) = comptroller.markets(address(cTokens[i]));
@@ -202,7 +205,13 @@ contract FusePoolLens {
             asset.borrowBalance = cToken.borrowBalanceCurrent(user);
             asset.membership = comptroller.checkMembership(user, cToken);
             asset.exchangeRate = cToken.exchangeRateCurrent();
-            asset.underlyingPrice = comptroller.oracle().getUnderlyingPrice(cToken);
+            asset.underlyingPrice = oracle.getUnderlyingPrice(cToken);
+            asset.oracle = address(oracle);
+
+            try MasterPriceOracle(asset.oracle).oracles(asset.underlyingToken) returns (address _oracle) {
+                asset.oracle = _oracle;
+            } catch { }
+
             asset.collateralFactor = collateralFactorMantissa;
             asset.reserveFactor = cToken.reserveFactorMantissa();
             asset.adminFee = cToken.adminFeeMantissa();
