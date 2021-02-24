@@ -16,6 +16,8 @@ import "./external/compound/CToken.sol";
 import "./external/compound/CErc20.sol";
 import "./external/compound/MasterPriceOracle.sol";
 
+import "./external/uniswap/IUniswapV2Pair.sol";
+
 import "./FusePoolDirectory.sol";
 
 /**
@@ -192,6 +194,20 @@ contract FusePoolLens {
                 ERC20Upgradeable underlying = ERC20Upgradeable(asset.underlyingToken);
                 asset.underlyingName = underlying.name();
                 asset.underlyingSymbol = underlying.symbol();
+
+                if (keccak256(abi.encodePacked(asset.underlyingName)) == keccak256(abi.encodePacked("Uniswap V2")) && keccak256(abi.encodePacked(asset.underlyingSymbol)) == keccak256(abi.encodePacked("UNI-V2"))) {
+                    ERC20Upgradeable token0 = ERC20Upgradeable(IUniswapV2Pair(asset.underlyingToken).token0());
+                    ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(asset.underlyingToken).token1());
+                    asset.underlyingName = string(abi.encodePacked("Uniswap ", token0.symbol(), "/", token1.symbol(), " LP"));
+                    asset.underlyingSymbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
+                } else if (keccak256(abi.encodePacked(asset.underlyingSymbol)) == keccak256(abi.encodePacked("SLP"))) {
+                    try IUniswapV2Pair(asset.underlyingToken).token0() returns (address _token0) {
+                        ERC20Upgradeable token0 = ERC20Upgradeable(_token0);
+                        ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(asset.underlyingToken).token1());
+                        asset.underlyingSymbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
+                    } catch { }
+                }
+
                 asset.underlyingDecimals = underlying.decimals();
                 asset.underlyingBalance = underlying.balanceOf(user);
             }
