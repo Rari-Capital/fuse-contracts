@@ -299,21 +299,29 @@ contract FusePoolLens {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
-     * @return An array of pools' Comptroller proxy addresses, an array of arrays of Fuse pool users, an array of pools' close factors, and an array of pools' liquidation incentives.
+     * @return An array of pools' Comptroller proxy addresses, an array of arrays of Fuse pool users, an array of pools' close factors, an array of pools' liquidation incentives, and an array of booleans indicating if retrieving each pool's data failed.
      */
-    function getPublicPoolUsersWithData(uint256 maxHealth) external returns (address[] memory, FusePoolUser[][] memory, uint256[] memory, uint256[] memory) {
+    function getPublicPoolUsersWithData(uint256 maxHealth) external returns (address[] memory, FusePoolUser[][] memory, uint256[] memory, uint256[] memory, bool[] memory) {
         (, FusePoolDirectory.FusePool[] memory publicPools) = directory.getPublicPools();
         address[] memory comptrollers = new address[](publicPools.length);
         FusePoolUser[][] memory users = new FusePoolUser[][](publicPools.length);
         uint256[] memory closeFactors = new uint256[](publicPools.length);
         uint256[] memory liquidationIncentives = new uint256[](publicPools.length);
+        bool[] memory errored = new bool[](publicPools.length);
 
         for (uint256 i = 0; i < publicPools.length; i++) {
             comptrollers[i] = publicPools[i].comptroller;
-            (users[i], closeFactors[i], liquidationIncentives[i]) = getPoolUsersWithData(Comptroller(publicPools[i].comptroller), maxHealth);
+
+            try this.getPoolUsersWithData(Comptroller(publicPools[i].comptroller), maxHealth) returns (FusePoolUser[] memory _users, uint256 closeFactor, uint256 liquidationIncentive) {
+                users[i] = _users;
+                closeFactors[i] = closeFactor;
+                liquidationIncentives[i] = liquidationIncentive;
+            } catch {
+                errored[i] = true;
+            }
         }
 
-        return (comptrollers, users, closeFactors, liquidationIncentives);
+        return (comptrollers, users, closeFactors, liquidationIncentives, errored);
     }
 
     /**
