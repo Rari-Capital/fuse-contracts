@@ -7,6 +7,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 import "./external/compound/Comptroller.sol";
 import "./external/compound/Unitroller.sol";
 import "./external/compound/PriceOracle.sol";
@@ -16,7 +19,18 @@ import "./external/compound/PriceOracle.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice FusePoolDirectory is a directory for Fuse money market pools.
  */
-contract FusePoolDirectory {
+contract FusePoolDirectory is OwnableUpgradeable {
+    /**
+     * @dev Initializes a deployer whitelist if desired.
+     * @param _enforceDeployerWhitelist Boolean indicating if the deployer whitelist is to be enforced.
+     * @param _deployerWhitelist Array of Ethereum accounts to be whitelisted.
+     */
+    function initialize(bool _enforceDeployerWhitelist, address[] memory _deployerWhitelist) public initializer {
+        __Ownable_init();
+        enforceDeployerWhitelist = _enforceDeployerWhitelist;
+        for (uint256 i = 0; i < _deployerWhitelist.length; i++) deployerWhitelist[_deployerWhitelist[i]] = true;
+    }
+
     /**
      * @dev Struct for a Fuse money market pool.
      */
@@ -50,6 +64,33 @@ contract FusePoolDirectory {
     event PoolRegistered(uint256 index, FusePool pool);
 
     /**
+     * @dev Booleans indicating if the deployer whitelist is enforced.
+     */
+    bool public enforceDeployerWhitelist;
+
+    /**
+     * @dev Maps Ethereum accounts to booleans indicating if they are allowed to deploy pools.
+     */
+    mapping(address => bool) public deployerWhitelist;
+
+    /**
+     * @dev Controls if the deployer whitelist is to be enforced.
+     * @param _enforceDeployerWhitelist Boolean indicating if the deployer whitelist is to be enforced.
+     */
+    function _setDeployerWhitelistEnforcement(bool _enforceDeployerWhitelist) external onlyOwner {
+        enforceDeployerWhitelist = _enforceDeployerWhitelist;
+    }
+
+    /**
+     * @dev Adds Ethereum accounts to the deployer whitelist.
+     * @param deployers Array of Ethereum accounts to be whitelisted.
+     */
+    function _whitelistDeployers(address[] memory deployers) external onlyOwner {
+        require(deployers.length > 0, "No deployers supplied.");
+        for (uint256 i = 0; i < deployers.length; i++) deployerWhitelist[deployers[i]] = true;
+    }
+
+    /**
      * @dev Adds a new Fuse pool to the directory.
      * @param name The name of the pool.
      * @param comptroller The pool's Comptroller proxy contract address.
@@ -70,6 +111,7 @@ contract FusePoolDirectory {
      */
     function _registerPool(string memory name, address comptroller, bool isPrivate) internal returns (uint256) {
         require(!poolExists[comptroller], "Pool already exists in the directory.");
+        require(!enforceDeployerWhitelist || deployerWhitelist[msg.sender], "Sender is not on deployer whitelist.");
         FusePool memory pool = FusePool(name, msg.sender, comptroller, isPrivate, block.number, block.timestamp);
         pools.push(pool);
         _poolsByAccount[msg.sender].push(pools.length - 1);

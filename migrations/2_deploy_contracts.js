@@ -20,7 +20,7 @@ module.exports = async function(deployer, network, accounts) {
   }
   
   // Deploy FusePoolDirectory
-  await deployProxy(FusePoolDirectory, [], { deployer, unsafeAllowCustomTypes: true });
+  await deployProxy(FusePoolDirectory, [true, [["live", "live-fork"].indexOf(network) >= 0 ? process.env.LIVE_OWNER : process.env.DEVELOPMENT_ADDRESS]], { deployer, unsafeAllowCustomTypes: true });
   
   // Deploy FuseSafeLiquidator
   await deployer.deploy(FuseSafeLiquidator);
