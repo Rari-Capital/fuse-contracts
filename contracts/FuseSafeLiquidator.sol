@@ -24,7 +24,7 @@ import "./external/uniswap/IUniswapV2Pair.sol";
 import "./external/uniswap/UniswapV2Library.sol";
 
 /**
- * @title FusePoolDirectory
+ * @title FuseSafeLiquidator
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice FuseSafeLiquidator safely liquidates unhealthy borrowers (with flashloan support).
  * @dev Do not transfer ETH or tokens directly to this address. Only send ETH here when using a method, and only approve tokens for transfer to here when using a method. Direct ETH transfers will be rejected and direct token transfers will be lost.
