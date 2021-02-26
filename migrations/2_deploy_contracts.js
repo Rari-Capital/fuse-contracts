@@ -26,10 +26,13 @@ module.exports = async function(deployer, network, accounts) {
   await deployer.deploy(FuseSafeLiquidator);
   
   // Deploy FuseFeeDistributor
-  await deployProxy(FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer });
+  var fuseFeeDistributor = await deployProxy(FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer });
   
   // Deploy FusePoolLens
   await deployProxy(FusePoolLens, [FusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
+
+  // Set pool limits
+  await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(1e18), web3.utils.toBN(350e18), web3.utils.toBN(1e18));
 
   // Live network: transfer ownership of deployed contracts from the deployer to the owner
   if (["live", "live-fork"].indexOf(network) >= 0) await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);

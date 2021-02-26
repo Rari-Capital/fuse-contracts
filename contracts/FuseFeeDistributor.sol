@@ -41,7 +41,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Sets the proportion of Fuse pool interest taken as a protocol fee.
      * @param _interestFeeRate The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
      */
-    function setInterestFeeRate(uint256 _interestFeeRate) external onlyOwner {
+    function _setInterestFeeRate(uint256 _interestFeeRate) external onlyOwner {
         require(_interestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
         interestFeeRate = _interestFeeRate;
     }
@@ -50,7 +50,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Withdraws accrued fees on interest.
      * @param erc20Contract The ERC20 token address to withdraw. Set to the zero address to withdraw ETH.
      */
-    function withdrawAssets(address erc20Contract) external {
+    function _withdrawAssets(address erc20Contract) external {
         if (erc20Contract == address(0)) {
             uint256 balance = address(this).balance;
             require(balance > 0, "No balance available to withdraw.");
@@ -85,7 +85,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @param _maxSupplyEth Maximum supply balance (in ETH) per user per Fuse pool asset.
      * @param _maxUtilizationRate Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
      */
-    function setPoolLimits(uint256 _minBorrowEth, uint256 _maxSupplyEth, uint256 _maxUtilizationRate) external onlyOwner {
+    function _setPoolLimits(uint256 _minBorrowEth, uint256 _maxSupplyEth, uint256 _maxUtilizationRate) external onlyOwner {
         require(_maxUtilizationRate <= 1e18, "Maximum utilization rate cannot be more than 100%.");
         minBorrowEth = _minBorrowEth;
         maxSupplyEth = _maxSupplyEth;
