@@ -40,4 +40,5 @@ interface Comptroller {
     function getAllMarkets() external view returns (CToken[] memory);
     function getAllBorrowers() external view returns (address[] memory);
     function suppliers(address account) external view returns (bool);
+    function whitelist(address account) external view returns (bool);
 }

@@ -510,4 +510,64 @@ contract FusePoolLens is Initializable {
 
         return (supplyBalance, borrowBalance);
     }
+
+    /**
+     * @notice Returns arrays of Fuse pool indexes and data with a whitelist containing `account`.
+     * Note that the whitelist does not have to be enforced.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     */
+    function getWhitelistedPoolsByAccount(address account) public view returns (uint256[] memory, FusePoolDirectory.FusePool[] memory) {
+        FusePoolDirectory.FusePool[] memory pools = directory.getAllPools();
+        uint256 arrayLength = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            Comptroller comptroller = Comptroller(pools[i].comptroller);
+
+            if (comptroller.whitelist(account)) arrayLength++;
+        }
+
+        uint256[] memory indexes = new uint256[](arrayLength);
+        FusePoolDirectory.FusePool[] memory accountPools = new FusePoolDirectory.FusePool[](arrayLength);
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            Comptroller comptroller = Comptroller(pools[i].comptroller);
+
+            if (comptroller.whitelist(account)) {
+                indexes[index] = i;
+                accountPools[index] = pools[i];
+                index++;
+                break;
+            }
+        }
+
+        return (indexes, accountPools);
+    }
+
+    /**
+     * @notice Returns arrays of the indexes of Fuse pools with a whitelist containing `account`, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getWhitelistedPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
+        (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = getWhitelistedPoolsByAccount(account);
+        uint256[] memory totalSupply = new uint256[](accountPools.length);
+        uint256[] memory totalBorrow = new uint256[](accountPools.length);
+        address[][] memory underlyingTokens = new address[][](accountPools.length);
+        string[][] memory underlyingSymbols = new string[][](accountPools.length);
+        bool[] memory errored = new bool[](accountPools.length);
+
+        for (uint256 i = 0; i < accountPools.length; i++) {
+            try this.getPoolSummary(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
+                totalSupply[i] = _totalSupply;
+                totalBorrow[i] = _totalBorrow;
+                underlyingTokens[i] = _underlyingTokens;
+                underlyingSymbols[i] = _underlyingSymbols;
+            } catch {
+                errored[i] = true;
+            }
+        }
+
+        return (indexes, accountPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+    }
 }
