@@ -582,14 +582,7 @@ contract FusePoolLens is Initializable {
                 outliers[arrayIndex] = CTokenOwnership(address(cToken), cTokenAdmin, cTokenAdminHasRights, cTokenFuseAdminHasRights);
             arrayIndex++;
         }
-
-        // TODO: verify oracle
-        // PriceOracle oracle = comptroller.oracle();
-
-        // TODO: Verify interest rate models?
-
-        // TODO: Verify that admin wants to be the admin
-
+        
         return (comptrollerAdmin, comptrollerAdminHasRights, comptrollerFuseAdminHasRights, outliers);
     }
 }
