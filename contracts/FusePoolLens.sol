@@ -122,7 +122,7 @@ contract FusePoolLens is Initializable {
                 underlyingSymbols[i] = "ETH";
             } else {
                 underlyingTokens[i] = CErc20(address(cToken)).underlying();
-                underlyingSymbols[i] = ERC20Upgradeable(underlyingTokens[i]).symbol();
+                (, underlyingSymbols[i]) = getTokenNameAndSymbol(underlyingTokens[i]);
             }
         }
 
@@ -178,13 +178,16 @@ contract FusePoolLens is Initializable {
         PriceOracle oracle = comptroller.oracle();
 
         for (uint256 i = 0; i < cTokens.length; i++) {
+            // Check if market is listed and get collateral factor
             (bool isListed, uint256 collateralFactorMantissa) = comptroller.markets(address(cTokens[i]));
             if (!isListed) continue;
 
+            // Start adding data to FusePoolAsset
             FusePoolAsset memory asset;
             CToken cToken = cTokens[i];
             asset.cToken = address(cToken);
 
+            // Get underlying asset data
             if (cToken.isCEther()) {
                 asset.underlyingName = "Ethereum";
                 asset.underlyingSymbol = "ETH";
@@ -193,52 +196,79 @@ contract FusePoolLens is Initializable {
             } else {
                 asset.underlyingToken = CErc20(address(cToken)).underlying();
                 ERC20Upgradeable underlying = ERC20Upgradeable(asset.underlyingToken);
-                asset.underlyingName = underlying.name();
-                asset.underlyingSymbol = underlying.symbol();
-
-                if (keccak256(abi.encodePacked(asset.underlyingName)) == keccak256(abi.encodePacked("Uniswap V2")) && keccak256(abi.encodePacked(asset.underlyingSymbol)) == keccak256(abi.encodePacked("UNI-V2"))) {
-                    ERC20Upgradeable token0 = ERC20Upgradeable(IUniswapV2Pair(asset.underlyingToken).token0());
-                    ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(asset.underlyingToken).token1());
-                    asset.underlyingName = string(abi.encodePacked("Uniswap ", token0.symbol(), "/", token1.symbol(), " LP"));
-                    asset.underlyingSymbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
-                } else if (keccak256(abi.encodePacked(asset.underlyingSymbol)) == keccak256(abi.encodePacked("SLP"))) {
-                    try IUniswapV2Pair(asset.underlyingToken).token0() returns (address _token0) {
-                        ERC20Upgradeable token0 = ERC20Upgradeable(_token0);
-                        ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(asset.underlyingToken).token1());
-                        asset.underlyingSymbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
-                    } catch { }
-                }
-
+                (asset.underlyingName, asset.underlyingSymbol) = getTokenNameAndSymbol(asset.underlyingToken);
                 asset.underlyingDecimals = underlying.decimals();
                 asset.underlyingBalance = underlying.balanceOf(user);
             }
 
+            // Get cToken data
             asset.supplyRatePerBlock = cToken.supplyRatePerBlock();
             asset.borrowRatePerBlock = cToken.borrowRatePerBlock();
             asset.liquidity = cToken.getCash();
             asset.totalBorrow = cToken.totalBorrowsCurrent();
             asset.totalSupply = asset.liquidity.add(asset.totalBorrow).sub(cToken.totalReserves());
             asset.supplyBalance = cToken.balanceOfUnderlying(user);
-            asset.borrowBalance = cToken.borrowBalanceCurrent(user);
+            asset.borrowBalance = cToken.borrowBalanceStored(user); // We would use borrowBalanceCurrent but we already accrue interest above
             asset.membership = comptroller.checkMembership(user, cToken);
-            asset.exchangeRate = cToken.exchangeRateCurrent();
+            asset.exchangeRate = cToken.exchangeRateStored(); // We would use exchangeRateCurrent but we already accrue interest above
             asset.underlyingPrice = oracle.getUnderlyingPrice(cToken);
+
+            // Get oracle for this cToken
             asset.oracle = address(oracle);
 
             try MasterPriceOracle(asset.oracle).oracles(asset.underlyingToken) returns (address _oracle) {
                 asset.oracle = _oracle;
             } catch { }
 
+            // More cToken data
             asset.collateralFactor = collateralFactorMantissa;
             asset.reserveFactor = cToken.reserveFactorMantissa();
             asset.adminFee = cToken.adminFeeMantissa();
             asset.fuseFee = cToken.fuseFeeMantissa();
 
+            // Add to assets array and increment index
             detailedAssets[index] = asset;
             index++;
         }
 
         return (detailedAssets);
+    }
+
+    /**
+     * @notice Returns the `name` and `symbol` of `token`.
+     * Supports Uniswap V2 and SushiSwap LP tokens as well as MKR.
+     * @param token An ERC20 token contract object.
+     * @return The `name` and `symbol`.
+     */
+    function getTokenNameAndSymbol(address token) internal view returns (string memory, string memory) {
+        ERC20Upgradeable tokenContract = ERC20Upgradeable(token);
+        string memory name = "";
+        string memory symbol = "";
+
+        try tokenContract.name() returns (string memory _name) {
+            name = _name;
+            symbol = tokenContract.symbol();
+
+            try IUniswapV2Pair(token).token0() returns (address _token0) {
+                bool isUniswapToken = keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked("Uniswap V2")) && keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked("UNI-V2"));
+                bool isSushiSwapToken = !isUniswapToken && keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked("SushiSwap LP Token")) && keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked("SLP"));
+
+                if (isUniswapToken || isSushiSwapToken) {
+                    ERC20Upgradeable token0 = ERC20Upgradeable(_token0);
+                    ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(token).token1());
+                    name = string(abi.encodePacked(isSushiSwapToken ? "SushiSwap " : "Uniswap ", token0.symbol(), "/", token1.symbol(), " LP"));
+                    symbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
+                }
+            } catch { }
+        } catch {
+            // MKR is a DSToken and uses bytes32
+            if (token == 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2) {
+                name = "Maker";
+                symbol = "MKR";
+            }
+        }
+
+        return (name, symbol);
     }
 
     /**
@@ -471,8 +501,8 @@ contract FusePoolLens is Initializable {
             CToken cToken = cTokens[i];
             (bool isListed, ) = comptroller.markets(address(cToken));
             if (!isListed) continue;
-            uint256 assetBorrowBalance = cToken.borrowBalanceCurrent(account);
             uint256 assetSupplyBalance = cToken.balanceOfUnderlying(account);
+            uint256 assetBorrowBalance = cToken.borrowBalanceStored(account); // We would use borrowBalanceCurrent but we already accrue interest above
             uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
             borrowBalance = borrowBalance.add(assetBorrowBalance.mul(underlyingPrice).div(1e18));
             supplyBalance = supplyBalance.add(assetSupplyBalance.mul(underlyingPrice).div(1e18));

@@ -19,6 +19,8 @@ import "./Unitroller.sol";
  */
 interface Comptroller {
     function admin() external view returns (address);
+    function adminHasRights() external view returns (bool);
+    function fuseAdminHasRights() external view returns (bool);
 
     function oracle() external view returns (PriceOracle);
     function closeFactorMantissa() external view returns (uint);
