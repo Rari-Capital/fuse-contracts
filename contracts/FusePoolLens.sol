@@ -15,11 +15,11 @@ import "./external/compound/Comptroller.sol";
 import "./external/compound/PriceOracle.sol";
 import "./external/compound/CToken.sol";
 import "./external/compound/CErc20.sol";
-import "./external/compound/MasterPriceOracle.sol";
 
 import "./external/uniswap/IUniswapV2Pair.sol";
 
 import "./FusePoolDirectory.sol";
+import "./oracles/MasterPriceOracle.sol";
 
 /**
  * @title FusePoolLens
@@ -208,8 +208,8 @@ contract FusePoolLens is Initializable {
             // Get oracle for this cToken
             asset.oracle = address(oracle);
 
-            try MasterPriceOracle(asset.oracle).oracles(asset.underlyingToken) returns (address _oracle) {
-                asset.oracle = _oracle;
+            try MasterPriceOracle(asset.oracle).oracles(asset.underlyingToken) returns (PriceOracle _oracle) {
+                asset.oracle = address(_oracle);
             } catch { }
 
             // More cToken data
@@ -527,5 +527,69 @@ contract FusePoolLens is Initializable {
     function getWhitelistedPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = getWhitelistedPoolsByAccount(account);
         return getPoolsWithData(indexes, accountPools);
+    }
+
+    struct CTokenOwnership {
+        address cToken;
+        address admin;
+        bool adminHasRights;
+        bool fuseAdminHasRights;
+    }
+
+    /**
+     * @notice Returns the admin, admin rights, Fuse admin (constant), Fuse admin rights, and an array of cTokens with differing properties.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPoolOwnership(Comptroller comptroller) external view returns (address, bool, bool, CTokenOwnership[] memory) {
+        // Get pool ownership
+        address comptrollerAdmin = comptroller.admin();
+        bool comptrollerAdminHasRights = comptroller.adminHasRights();
+        bool comptrollerFuseAdminHasRights = comptroller.fuseAdminHasRights();
+
+        // Get cToken ownership
+        CToken[] memory cTokens = comptroller.getAllMarkets();
+        uint256 arrayLength = 0;
+
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            CToken cToken = cTokens[i];
+            (bool isListed, ) = comptroller.markets(address(cToken));
+            if (!isListed) continue;
+            
+            address cTokenAdmin = cToken.admin();
+            bool cTokenAdminHasRights = cToken.adminHasRights();
+            bool cTokenFuseAdminHasRights = cToken.fuseAdminHasRights();
+
+            // If outlier, push to array
+            if (cTokenAdmin != comptrollerAdmin || cTokenAdminHasRights != comptrollerAdminHasRights || cTokenFuseAdminHasRights != comptrollerFuseAdminHasRights)
+                arrayLength++;
+        }
+
+        CTokenOwnership[] memory outliers = new CTokenOwnership[](arrayLength);
+        uint256 arrayIndex = 0;
+
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            CToken cToken = cTokens[i];
+            (bool isListed, ) = comptroller.markets(address(cToken));
+            if (!isListed) continue;
+            
+            address cTokenAdmin = cToken.admin();
+            bool cTokenAdminHasRights = cToken.adminHasRights();
+            bool cTokenFuseAdminHasRights = cToken.fuseAdminHasRights();
+
+            // If outlier, push to array and increment array index
+            if (cTokenAdmin != comptrollerAdmin || cTokenAdminHasRights != comptrollerAdminHasRights || cTokenFuseAdminHasRights != comptrollerFuseAdminHasRights)
+                outliers[arrayIndex] = CTokenOwnership(address(cToken), cTokenAdmin, cTokenAdminHasRights, cTokenFuseAdminHasRights);
+            arrayIndex++;
+        }
+
+        // TODO: verify oracle
+        // PriceOracle oracle = comptroller.oracle();
+
+        // TODO: Verify interest rate models?
+
+        // TODO: Verify that admin wants to be the admin
+
+        return (comptrollerAdmin, comptrollerAdminHasRights, comptrollerFuseAdminHasRights, outliers);
     }
 }
