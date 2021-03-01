@@ -56,7 +56,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
         if (from == address(0)) {
             // Exchange from ETH to tokens
-            UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
+            UNISWAP_V2_ROUTER_02.swapExactETHForTokens{value: address(this).balance}(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
         } else {
             // Approve input tokens
             IERC20Upgradeable fromToken = IERC20Upgradeable(from);
@@ -114,7 +114,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo) external payable {
         // Liquidate ETH borrow
         require(msg.value > 0, "Repay amount (transaction value) must be greater than 0.");
-        cEther.liquidateBorrow.value(msg.value)(borrower, CToken(cErc20Collateral));
+        cEther.liquidateBorrow{value: msg.value}(borrower, CToken(cErc20Collateral));
 
         // Redeem seized cToken collateral if necessary
         if (exchangeSeizedTo != address(cErc20Collateral)) {
@@ -145,7 +145,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             require(seizedOutputAmount >= minOutputAmount, "Minimum ETH output amount not satisfied.");
 
             if (seizedOutputAmount > 0) {
-                (bool success, ) = msg.sender.call.value(seizedOutputAmount)("");
+                (bool success, ) = msg.sender.call{value: seizedOutputAmount}("");
                 require(success, "Failed to transfer output ETH to msg.sender.");
             }
         } else {
@@ -222,7 +222,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         pair.swap(token0 == WETH_ADDRESS ? repayAmount : 0, token0 != WETH_ADDRESS ? repayAmount : 0, address(this), msg.data);
 
         // Exchange profit if necessary
-        if (exchangeProfitTo != address(0) && exchangeProfitTo != cErc20Collateral.underlying()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
+        if (exchangeProfitTo != address(0) && exchangeProfitTo != cErc20Collateral.underlying()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens{value: address(this).balance}(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
 
         // Transfer profit to msg.sender
         transferSeizedFunds(exchangeProfitTo, minProfitAmount);
@@ -271,7 +271,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         WETH.withdraw(repayAmount);
 
         // Liquidate ETH borrow using flashloaned ETH
-        cEther.liquidateBorrow.value(repayAmount)(borrower, CToken(cErc20Collateral));
+        cEther.liquidateBorrow{value: repayAmount}(borrower, CToken(cErc20Collateral));
 
         // Redeem seized cTokens for underlying asset
         uint256 seizedCTokenAmount = cErc20Collateral.balanceOf(address(this));
@@ -292,7 +292,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
         // Repay flashloan
         require(flashLoanReturnAmount <= address(this).balance, "Flashloan return amount greater than ETH exchanged from seized collateral.");
-        WETH.deposit.value(flashLoanReturnAmount)();
+        WETH.deposit{value: flashLoanReturnAmount}();
         require(WETH.transfer(msg.sender, flashLoanReturnAmount), "Failed to transfer WETH back to flashlender.");
     }
 
@@ -321,7 +321,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
             // Repay flashloan
             require(wethRequired <= underlyingCollateralSeized, "Seized ETH collateral not enough to repay flashloan.");
-            WETH.deposit.value(wethRequired)();
+            WETH.deposit{value: wethRequired}();
             require(WETH.transfer(msg.sender, wethRequired), "Failed to repay Uniswap flashloan with WETH exchanged from seized collateral.");
         } else {
             // Check underlying collateral seized
