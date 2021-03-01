@@ -49,24 +49,7 @@ contract FusePoolLens is Initializable {
      */
     function getPublicPoolsWithData() external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory publicPools) = directory.getPublicPools();
-        uint256[] memory totalSupply = new uint256[](publicPools.length);
-        uint256[] memory totalBorrow = new uint256[](publicPools.length);
-        address[][] memory underlyingTokens = new address[][](publicPools.length);
-        string[][] memory underlyingSymbols = new string[][](publicPools.length);
-        bool[] memory errored = new bool[](publicPools.length);
-        
-        for (uint256 i = 0; i < publicPools.length; i++) {
-            try this.getPoolSummary(Comptroller(publicPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
-                totalSupply[i] = _totalSupply;
-                totalBorrow[i] = _totalBorrow;
-                underlyingTokens[i] = _underlyingTokens;
-                underlyingSymbols[i] = _underlyingSymbols;
-            } catch {
-                errored[i] = true;
-            }
-        }
-
-        return (indexes, publicPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+        return getPoolsWithData(indexes, publicPools);
     }
 
     /**
@@ -76,14 +59,23 @@ contract FusePoolLens is Initializable {
      */
     function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = directory.getPoolsByAccount(account);
-        uint256[] memory totalSupply = new uint256[](accountPools.length);
-        uint256[] memory totalBorrow = new uint256[](accountPools.length);
-        address[][] memory underlyingTokens = new address[][](accountPools.length);
-        string[][] memory underlyingSymbols = new string[][](accountPools.length);
-        bool[] memory errored = new bool[](accountPools.length);
+        return getPoolsWithData(indexes, accountPools);
+    }
 
-        for (uint256 i = 0; i < accountPools.length; i++) {
-            try this.getPoolSummary(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
+    /**
+     * @notice Internal function returning arrays of requested Fuse pool indexes, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPoolsWithData(uint256[] memory indexes, FusePoolDirectory.FusePool[] memory pools) internal returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
+        uint256[] memory totalSupply = new uint256[](pools.length);
+        uint256[] memory totalBorrow = new uint256[](pools.length);
+        address[][] memory underlyingTokens = new address[][](pools.length);
+        string[][] memory underlyingSymbols = new string[][](pools.length);
+        bool[] memory errored = new bool[](pools.length);
+        
+        for (uint256 i = 0; i < pools.length; i++) {
+            try this.getPoolSummary(Comptroller(pools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
                 totalSupply[i] = _totalSupply;
                 totalBorrow[i] = _totalBorrow;
                 underlyingTokens[i] = _underlyingTokens;
@@ -93,7 +85,7 @@ contract FusePoolLens is Initializable {
             }
         }
 
-        return (indexes, accountPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+        return (indexes, pools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
     }
 
     /**
@@ -441,24 +433,7 @@ contract FusePoolLens is Initializable {
      */
     function getPoolsBySupplierWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = getPoolsBySupplier(account);
-        uint256[] memory totalSupply = new uint256[](accountPools.length);
-        uint256[] memory totalBorrow = new uint256[](accountPools.length);
-        address[][] memory underlyingTokens = new address[][](accountPools.length);
-        string[][] memory underlyingSymbols = new string[][](accountPools.length);
-        bool[] memory errored = new bool[](accountPools.length);
-
-        for (uint256 i = 0; i < accountPools.length; i++) {
-            try this.getPoolSummary(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
-                totalSupply[i] = _totalSupply;
-                totalBorrow[i] = _totalBorrow;
-                underlyingTokens[i] = _underlyingTokens;
-                underlyingSymbols[i] = _underlyingSymbols;
-            } catch {
-                errored[i] = true;
-            }
-        }
-
-        return (indexes, accountPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+        return getPoolsWithData(indexes, accountPools);
     }
 
     /**
@@ -551,23 +526,6 @@ contract FusePoolLens is Initializable {
      */
     function getWhitelistedPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = getWhitelistedPoolsByAccount(account);
-        uint256[] memory totalSupply = new uint256[](accountPools.length);
-        uint256[] memory totalBorrow = new uint256[](accountPools.length);
-        address[][] memory underlyingTokens = new address[][](accountPools.length);
-        string[][] memory underlyingSymbols = new string[][](accountPools.length);
-        bool[] memory errored = new bool[](accountPools.length);
-
-        for (uint256 i = 0; i < accountPools.length; i++) {
-            try this.getPoolSummary(Comptroller(accountPools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
-                totalSupply[i] = _totalSupply;
-                totalBorrow[i] = _totalBorrow;
-                underlyingTokens[i] = _underlyingTokens;
-                underlyingSymbols[i] = _underlyingSymbols;
-            } catch {
-                errored[i] = true;
-            }
-        }
-
-        return (indexes, accountPools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+        return getPoolsWithData(indexes, accountPools);
     }
 }
