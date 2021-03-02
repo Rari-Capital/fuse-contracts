@@ -28,6 +28,11 @@ contract YVaultV1PriceOracle is PriceOracle {
         uint underlyingPrice = underlyingToken == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 ? 1e18 : BasePriceOracle(msg.sender).price(underlyingToken);
 
         // yVault/ETH = yVault/token * token/ETH
-        return yVault.getPricePerFullShare().mul(underlyingPrice).div(10 ** uint256(yVault.decimals()));
+        // Return value = yVault/ETH scaled by 1e(36 - yVault decimals)
+        // `pricePerShare` = yVault/token scaled by 1e18
+        // `underlyingPrice` = token/ETH scaled by 1e18
+        // Return value = `pricePerShare` * `underlyingPrice` / 1e(yVault decimals)
+        uint256 baseUnit = 10 ** uint256(yVault.decimals());
+        return yVault.getPricePerFullShare().mul(underlyingPrice).div(baseUnit); // getPricePerFullShare is scaled by 1e18
     }
 }
