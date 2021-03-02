@@ -29,6 +29,6 @@ contract SynthetixPriceOracle is PriceOracle {
         uint256 baseUnit = 10 ** uint(ERC20Upgradeable(underlying).decimals());
         underlying = Proxy(underlying).target(); // For some reason we have to use the logic contract instead of the proxy contract to get `resolver` and `currencyKey`
         ExchangeRates exchangeRates = ExchangeRates(MixinResolver(underlying).resolver().requireAndGetAddress("ExchangeRates", "Failed to get Synthetix's ExchangeRates contract address."));
-        return exchangeRates.effectiveValue(ISynth(underlying).currencyKey(), baseUnit, "ETH").mul(1e36).div(baseUnit);
+        return exchangeRates.effectiveValue(ISynth(underlying).currencyKey(), baseUnit, "ETH").mul(1e18).div(baseUnit);
     }
 }
