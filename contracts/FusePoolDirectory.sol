@@ -38,7 +38,6 @@ contract FusePoolDirectory is OwnableUpgradeable {
         string name;
         address creator;
         address comptroller;
-        bool isPrivate;
         uint256 blockPosted;
         uint256 timestampPosted;
     }
@@ -94,25 +93,23 @@ contract FusePoolDirectory is OwnableUpgradeable {
      * @dev Adds a new Fuse pool to the directory.
      * @param name The name of the pool.
      * @param comptroller The pool's Comptroller proxy contract address.
-     * @param isPrivate Boolean indicating if the pool is private.
      * @return The index of the registered Fuse pool.
      */
-    function registerPool(string memory name, address comptroller, bool isPrivate) external returns (uint256) {
+    function registerPool(string memory name, address comptroller) external returns (uint256) {
         require(msg.sender == Comptroller(comptroller).admin(), "Pool admin is not the sender.");
-        return _registerPool(name, comptroller, isPrivate);
+        return _registerPool(name, comptroller);
     }
 
     /**
      * @dev Adds a new Fuse pool to the directory (without checking msg.sender).
      * @param name The name of the pool.
      * @param comptroller The pool's Comptroller proxy contract address.
-     * @param isPrivate Boolean indicating if the pool is private.
      * @return The index of the registered Fuse pool.
      */
-    function _registerPool(string memory name, address comptroller, bool isPrivate) internal returns (uint256) {
+    function _registerPool(string memory name, address comptroller) internal returns (uint256) {
         require(!poolExists[comptroller], "Pool already exists in the directory.");
         require(!enforceDeployerWhitelist || deployerWhitelist[msg.sender], "Sender is not on deployer whitelist.");
-        FusePool memory pool = FusePool(name, msg.sender, comptroller, isPrivate, block.number, block.timestamp);
+        FusePool memory pool = FusePool(name, msg.sender, comptroller, block.number, block.timestamp);
         pools.push(pool);
         _poolsByAccount[msg.sender].push(pools.length - 1);
         poolExists[comptroller] = true;
@@ -124,14 +121,15 @@ contract FusePoolDirectory is OwnableUpgradeable {
      * @dev Deploys a new Fuse pool and adds to the directory.
      * @param name The name of the pool.
      * @param implementation The Comptroller implementation contract address.
-     * @param isPrivate Boolean indicating if the pool is private.
      * @param closeFactor The pool's close factor (scaled by 1e18).
      * @param maxAssets Maximum number of assets in the pool.
      * @param liquidationIncentive The pool's liquidation incentive (scaled by 1e18).
      * @param priceOracle The pool's PriceOracle contract address.
+     * @param enforceWhitelist Boolean indicating if the pool's supplier/borrower whitelist is to be enforced.
+     * @param whitelist If `enforceWhitelist` is true, an array of addresses to be whitelisted.
      * @return The index of the registered Fuse pool and the Unitroller proxy address.
      */
-    function deployPool(string memory name, address implementation, bool isPrivate, uint256 closeFactor, uint256 maxAssets, uint256 liquidationIncentive, address priceOracle) external returns (uint256, address) {
+    function deployPool(string memory name, address implementation, uint256 closeFactor, uint256 maxAssets, uint256 liquidationIncentive, address priceOracle, bool enforceWhitelist, address[] memory whitelist) external returns (uint256, address) {
         // Input validation
         require(implementation != address(0), "No Comptroller implementation contract address specified.");
         require(priceOracle != address(0), "No PriceOracle contract address specified.");
@@ -158,11 +156,19 @@ contract FusePoolDirectory is OwnableUpgradeable {
         comptrollerProxy._setLiquidationIncentive(liquidationIncentive);
         comptrollerProxy._setPriceOracle(PriceOracle(priceOracle));
 
+        // Whitelist
+        if (enforceWhitelist) {
+            require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
+            bool[] memory statuses = new bool[](whitelist.length);
+            for (uint256 i = 0; i < whitelist.length; i++) statuses[i] = true;
+            require(comptrollerProxy._setWhitelistStatuses(whitelist, statuses) == 0, "Failed to initialize supplier/borrower whitelist.");
+        }
+
         // Make msg.sender the admin
         unitroller._setPendingAdmin(msg.sender);
 
         // Register the pool with this FusePoolDirectory
-        return (_registerPool(name, proxy, isPrivate), proxy);
+        return (_registerPool(name, proxy), proxy);
     }
 
     /**
@@ -179,12 +185,24 @@ contract FusePoolDirectory is OwnableUpgradeable {
      */
     function getPublicPools() external view returns (uint256[] memory, FusePool[] memory) {
         uint256 arrayLength = 0;
-        for (uint256 i = 0; i < pools.length; i++) if (!pools[i].isPrivate) arrayLength++;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            try Comptroller(pools[i].comptroller).enforceWhitelist() returns (bool enforceWhitelist) {
+                if (enforceWhitelist) continue;
+            } catch { }
+
+            arrayLength++;
+        }
+
         uint256[] memory indexes = new uint256[](arrayLength);
         FusePool[] memory publicPools = new FusePool[](arrayLength);
         uint256 index = 0;
 
-        for (uint256 i = 0; i < pools.length; i++) if (!pools[i].isPrivate) {
+        for (uint256 i = 0; i < pools.length; i++) {
+            try Comptroller(pools[i].comptroller).enforceWhitelist() returns (bool enforceWhitelist) {
+                if (enforceWhitelist) continue;
+            } catch { }
+
             indexes[index] = i;
             publicPools[index] = pools[i];
             index++;
