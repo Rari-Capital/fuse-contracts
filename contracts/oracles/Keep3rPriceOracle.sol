@@ -53,7 +53,7 @@ contract Keep3rPriceOracle is PriceOracle, BasePriceOracle {
     }
     
     /**
-     * @dev Returns the price in ETH of `underlying` (implements `BasePriceOracle`).
+     * @dev Internal function returning the price in ETH of `underlying`.
      */
     function _price(address underlying) internal view returns (uint) {
         // Return 1e18 for WETH
