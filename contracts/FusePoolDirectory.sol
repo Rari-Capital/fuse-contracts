@@ -121,15 +121,14 @@ contract FusePoolDirectory is OwnableUpgradeable {
      * @dev Deploys a new Fuse pool and adds to the directory.
      * @param name The name of the pool.
      * @param implementation The Comptroller implementation contract address.
+     * @param enforceWhitelist Boolean indicating if the pool's supplier/borrower whitelist is to be enforced.
      * @param closeFactor The pool's close factor (scaled by 1e18).
      * @param maxAssets Maximum number of assets in the pool.
      * @param liquidationIncentive The pool's liquidation incentive (scaled by 1e18).
      * @param priceOracle The pool's PriceOracle contract address.
-     * @param enforceWhitelist Boolean indicating if the pool's supplier/borrower whitelist is to be enforced.
-     * @param whitelist If `enforceWhitelist` is true, an array of addresses to be whitelisted.
      * @return The index of the registered Fuse pool and the Unitroller proxy address.
      */
-    function deployPool(string memory name, address implementation, uint256 closeFactor, uint256 maxAssets, uint256 liquidationIncentive, address priceOracle, bool enforceWhitelist, address[] memory whitelist) external returns (uint256, address) {
+    function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 maxAssets, uint256 liquidationIncentive, address priceOracle) external returns (uint256, address) {
         // Input validation
         require(implementation != address(0), "No Comptroller implementation contract address specified.");
         require(priceOracle != address(0), "No PriceOracle contract address specified.");
@@ -157,12 +156,7 @@ contract FusePoolDirectory is OwnableUpgradeable {
         comptrollerProxy._setPriceOracle(PriceOracle(priceOracle));
 
         // Whitelist
-        if (enforceWhitelist) {
-            require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
-            bool[] memory statuses = new bool[](whitelist.length);
-            for (uint256 i = 0; i < whitelist.length; i++) statuses[i] = true;
-            require(comptrollerProxy._setWhitelistStatuses(whitelist, statuses) == 0, "Failed to initialize supplier/borrower whitelist.");
-        }
+        if (enforceWhitelist) require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
 
         // Make msg.sender the admin
         unitroller._setPendingAdmin(msg.sender);

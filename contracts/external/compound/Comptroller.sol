@@ -44,5 +44,5 @@ interface Comptroller {
     function whitelist(address account) external view returns (bool);
 
     function _setWhitelistEnforcement(bool enforce) external returns (uint);
-    function _setWhitelistStatuses(address[] calldata suppliers, bool[] calldata statuses) external returns (uint);
+    function _setWhitelistStatuses(address[] calldata _suppliers, bool[] calldata statuses) external returns (uint);
 }

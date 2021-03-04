@@ -54,7 +54,7 @@ contract UniswapLpTokenPriceOracle is PriceOracle {
         IUniswapV2Pair pair = IUniswapV2Pair(token);
         uint totalSupply = pair.totalSupply();
         if (totalSupply == 0) return 0;
-        (uint reserve0, uint reserve1, uint32 blockTimestampLast) = pair.getReserves();
+        (uint reserve0, uint reserve1, ) = pair.getReserves();
         address token0 = pair.token0();
         address token1 = pair.token1();
 
