@@ -21,19 +21,6 @@ contract UniswapLpTokenPriceOracle is PriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @dev Boolean indicating if `msg.sender` is to be used as the root oracle instead of using current Uniswap market conditions.
-     */
-    bool public useRootOracle = true;
-
-    /**
-     * @notice Constructor for the Uniswap LP token price oracle.
-     * @param _useRootOracle Boolean indicating if `msg.sender` is to be used as the root oracle instead of using current Uniswap market conditions (be warned of security risks when not using a trusted root oracle).
-     */
-    constructor(bool _useRootOracle) public {
-        useRootOracle = _useRootOracle;
-    }
-
-    /**
      * @dev WETH contract address.
      */
     address constant private WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -71,21 +58,13 @@ contract UniswapLpTokenPriceOracle is PriceOracle {
         address token0 = pair.token0();
         address token1 = pair.token1();
 
-        if (useRootOracle) {
-            // Get fair price of non-WETH token (underlying the pair) in terms of ETH
-            uint token0FairPrice = token0 == WETH_ADDRESS ? 1e18 : BasePriceOracle(msg.sender).price(token0).mul(1e18).div(10 ** uint256(ERC20Upgradeable(token0).decimals()));
-            uint token1FairPrice = token1 == WETH_ADDRESS ? 1e18 : BasePriceOracle(msg.sender).price(token1).mul(1e18).div(10 ** uint256(ERC20Upgradeable(token1).decimals()));
+        // Get fair price of non-WETH token (underlying the pair) in terms of ETH
+        uint token0FairPrice = token0 == WETH_ADDRESS ? 1e18 : BasePriceOracle(msg.sender).price(token0).mul(1e18).div(10 ** uint256(ERC20Upgradeable(token0).decimals()));
+        uint token1FairPrice = token1 == WETH_ADDRESS ? 1e18 : BasePriceOracle(msg.sender).price(token1).mul(1e18).div(10 ** uint256(ERC20Upgradeable(token1).decimals()));
 
-            // Implementation from https://github.com/AlphaFinanceLab/homora-v2/blob/e643392d582c81f6695136971cff4b685dcd2859/contracts/oracle/UniswapV2Oracle.sol#L18
-            uint256 sqrtK = sqrt(reserve0.mul(reserve1)).mul(2 ** 112).div(totalSupply);
-            return sqrtK.mul(2).mul(sqrt(token0FairPrice)).div(2 ** 56).mul(sqrt(token1FairPrice)).div(2 ** 56);
-        } else {
-            // Get current LP token price (ETH-based pairs only)
-            // Be warned of security risks of using Uniswap spot prices
-            require(uint32(block.timestamp % 2 ** 32) != blockTimestampLast, "Uniswap LP token was updated in this block. Reverting due to risk of price manipulation.");
-            require(token0 == WETH_ADDRESS || token1 == WETH_ADDRESS, "Uniswap LP token not based in ETH and root oracle not available.");
-            return (token0 == WETH_ADDRESS ? reserve0 : reserve1).mul(2).mul(1e18).div(totalSupply);
-        }
+        // Implementation from https://github.com/AlphaFinanceLab/homora-v2/blob/e643392d582c81f6695136971cff4b685dcd2859/contracts/oracle/UniswapV2Oracle.sol#L18
+        uint256 sqrtK = sqrt(reserve0.mul(reserve1)).mul(2 ** 112).div(totalSupply);
+        return sqrtK.mul(2).mul(sqrt(token0FairPrice)).div(2 ** 56).mul(sqrt(token1FairPrice)).div(2 ** 56);
     }
 
     /**
