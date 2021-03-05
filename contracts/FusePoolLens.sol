@@ -104,7 +104,7 @@ contract FusePoolLens is Initializable {
             (bool isListed, ) = comptroller.markets(address(cToken));
             if (!isListed) continue;
             uint256 assetTotalBorrow = cToken.totalBorrowsCurrent();
-            uint256 assetTotalSupply = cToken.getCash().add(assetTotalBorrow).sub(cToken.totalReserves());
+            uint256 assetTotalSupply = cToken.getCash().add(assetTotalBorrow).sub(cToken.totalReserves().add(cToken.totalAdminFees()).add(cToken.totalFuseFees()));
             uint256 underlyingPrice = oracle.getUnderlyingPrice(cToken);
             totalBorrow = totalBorrow.add(assetTotalBorrow.mul(underlyingPrice).div(1e18));
             totalSupply = totalSupply.add(assetTotalSupply.mul(underlyingPrice).div(1e18));
@@ -198,7 +198,7 @@ contract FusePoolLens is Initializable {
             asset.borrowRatePerBlock = cToken.borrowRatePerBlock();
             asset.liquidity = cToken.getCash();
             asset.totalBorrow = cToken.totalBorrowsCurrent();
-            asset.totalSupply = asset.liquidity.add(asset.totalBorrow).sub(cToken.totalReserves());
+            asset.totalSupply = asset.liquidity.add(asset.totalBorrow).sub(cToken.totalReserves().add(cToken.totalAdminFees()).add(cToken.totalFuseFees()));
             asset.supplyBalance = cToken.balanceOfUnderlying(user);
             asset.borrowBalance = cToken.borrowBalanceStored(user); // We would use borrowBalanceCurrent but we already accrue interest above
             asset.membership = comptroller.checkMembership(user, cToken);

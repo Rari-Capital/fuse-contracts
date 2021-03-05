@@ -24,6 +24,8 @@ interface CToken {
     function fuseFeeMantissa() external view returns (uint256);
     function reserveFactorMantissa() external view returns (uint256);
     function totalReserves() external view returns (uint);
+    function totalAdminFees() external view returns (uint);
+    function totalFuseFees() external view returns (uint);
 
     function isCToken() external view returns (bool);
     function isCEther() external view returns (bool);
