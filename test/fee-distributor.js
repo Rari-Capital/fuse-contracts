@@ -10,7 +10,7 @@ const IERC20Upgradeable = artifacts.require("IERC20Upgradeable");
 contract("FuseFeeDistributor", accounts => {
   it("should withdraw ETH sent to the contract", async () => {
     let feeDistributorInstance = await FuseFeeDistributor.deployed();
-    var amount = web3.utils.toBN(1e17);
+    var amount = web3.utils.toBN(1e16);
     await web3.eth.sendTransaction({ from: process.env.DEVELOPMENT_ADDRESS, to: FuseFeeDistributor.address, value: amount, gasPrice: 0 });
     var accountBalanceBeforeWithdrawal = web3.utils.toBN(await web3.eth.getBalance(process.env.DEVELOPMENT_ADDRESS));
     await feeDistributorInstance._withdrawAssets("0x0000000000000000000000000000000000000000", { from: process.env.DEVELOPMENT_ADDRESS, gasPrice: 0 });
