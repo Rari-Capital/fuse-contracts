@@ -23,6 +23,8 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     address public admin;
 
+    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
     /**
      * @dev Controls if `admin` can overwrite existing assignments of oracles to underlying tokens.
      */
@@ -73,6 +75,14 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     event NewAdmin(address oldAdmin, address newAdmin);
 
+    // jmonteer: does it make sense to have canAdminOverwrite state variable without a setter? if it does, change it to immutable
+    function setCanAdminOverwrite(bool _canAdminOverwrite) external onlyAdmin {
+        canAdminOverwrite = _canAdminOverwrite;
+        emit ChangeAdminOverwrite(msg.sender, _canAdminOverwrite);
+    }
+
+    event ChangeAdminOverwrite(address admin, bool canOverwrite);
+
     /**
      * @dev Modifier that checks if `msg.sender == admin`.
      */
@@ -92,7 +102,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         address underlying = address(CErc20(address(cToken)).underlying());
 
         // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+        if (underlying == WETH) return 1e18;
 
         // Get underlying price from assigned oracle
         return oracles[underlying].getUnderlyingPrice(cToken);
@@ -103,7 +113,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     function price(address underlying) external override view returns (uint) {
         // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+        if (underlying == WETH) return 1e18;
 
         // Get underlying price from assigned oracle
         return BasePriceOracle(address(oracles[underlying])).price(underlying);
