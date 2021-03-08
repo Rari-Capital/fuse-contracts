@@ -23,7 +23,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     address public admin;
 
-    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant private WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /**
      * @dev Controls if `admin` can overwrite existing assignments of oracles to underlying tokens.
@@ -102,7 +102,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         address underlying = address(CErc20(address(cToken)).underlying());
 
         // Return 1e18 for WETH
-        if (underlying == WETH) return 1e18;
+        if (underlying == WETH_ADDRESS) return 1e18;
 
         // Get underlying price from assigned oracle
         return oracles[underlying].getUnderlyingPrice(cToken);
@@ -113,7 +113,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     function price(address underlying) external override view returns (uint) {
         // Return 1e18 for WETH
-        if (underlying == WETH) return 1e18;
+        if (underlying == WETH_ADDRESS) return 1e18;
 
         // Get underlying price from assigned oracle
         return BasePriceOracle(address(oracles[underlying])).price(underlying);
