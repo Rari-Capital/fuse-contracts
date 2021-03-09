@@ -72,6 +72,7 @@ contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
         ethPriceFeeds[0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599] = AggregatorV3Interface(0xdeb288F737066589598e9214E782fa5A8eD689e8); // WBTC = BTC
         ethPriceFeeds[0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D] = AggregatorV3Interface(0xdeb288F737066589598e9214E782fa5A8eD689e8); // renBTC = BTC
         ethPriceFeeds[0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6] = AggregatorV3Interface(0xdeb288F737066589598e9214E782fa5A8eD689e8); // sBTC = BTC
+        ethPriceFeeds[0x0316EB71485b0Ab14103307bf65a021042c6d380] = AggregatorV3Interface(0xdeb288F737066589598e9214E782fa5A8eD689e8); // HBTC = BTC
         ethPriceFeeds[0x4Fabb145d64652a948d72533023f6E7A623C7C53] = AggregatorV3Interface(0x614715d2Af89E6EC99A233818275142cE88d1Cfd); // BUSD
         ethPriceFeeds[0x56d811088235F11C8920698a204A5010a788f4b3] = AggregatorV3Interface(0x8f7C7181Ed1a2BA41cfC3f5d064eF91b67daef66); // BZRX
         ethPriceFeeds[0xaaAEBE6Fe48E54f431b0C390CfaF0b017d09D42d] = AggregatorV3Interface(0x75FbD83b4bd51dEe765b2a01e8D3aa1B020F9d33); // CEL
