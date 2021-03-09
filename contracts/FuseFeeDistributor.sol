@@ -29,7 +29,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         __Ownable_init();
         interestFeeRate = _interestFeeRate;
         maxSupplyEth = uint256(-1);
-        maxUtilizationRate = 1e18;
+        maxUtilizationRate = uint256(-1);
     }
 
     /**
@@ -86,7 +86,6 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @param _maxUtilizationRate Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
      */
     function _setPoolLimits(uint256 _minBorrowEth, uint256 _maxSupplyEth, uint256 _maxUtilizationRate) external onlyOwner {
-        require(_maxUtilizationRate <= 1e18, "Maximum utilization rate cannot be more than 100%.");
         minBorrowEth = _minBorrowEth;
         maxSupplyEth = _maxSupplyEth;
         maxUtilizationRate = _maxUtilizationRate;
