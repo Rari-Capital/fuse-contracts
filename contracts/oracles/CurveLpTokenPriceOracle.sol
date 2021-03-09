@@ -49,13 +49,13 @@ contract CurveLpTokenPriceOracle is PriceOracle {
     function _price(address lpToken) internal view virtual returns (uint) {
       address pool = poolOf[lpToken];
       require(pool != address(0), "LP token is not registered.");
-      UnderlyingToken[] memory tokens = underlyingTokens[lpToken];
+      address[] memory tokens = underlyingTokens[lpToken];
       uint256 minPx = uint256(-1);
       uint256 n = tokens.length;
 
       for (uint256 i = 0; i < n; i++) {
-          UnderlyingToken memory ulToken = tokens[i];
-          uint256 tokenPx = BasePriceOracle(msg.sender).price(ulToken.token);
+          address ulToken = tokens[i];
+          uint256 tokenPx = BasePriceOracle(msg.sender).price(ulToken);
           if (tokenPx < minPx) minPx = tokenPx;
       }
 
@@ -69,17 +69,9 @@ contract CurveLpTokenPriceOracle is PriceOracle {
     ICurveRegistry public constant registry = ICurveRegistry(0x7D86446dDb609eD0F5f8684AcF30380a356b2B4c);
 
     /**
-     * @notice Struct for tokens underlying Curve pools.
-     */
-    struct UnderlyingToken {
-        address token;
-        uint8 decimals;
-    }
-
-    /**
      * @dev Maps Curve LP token addresses to underlying token addresses.
      */
-    mapping(address => UnderlyingToken[]) public underlyingTokens;
+    mapping(address => address[]) public underlyingTokens;
 
     /**
      * @dev Maps Curve LP token addresses to pool addresses.
@@ -98,6 +90,6 @@ contract CurveLpTokenPriceOracle is PriceOracle {
         poolOf[lpToken] = pool;
         uint n = registry.get_n_coins(pool);
         address[8] memory tokens = registry.get_coins(pool);
-        for (uint256 i = 0; i < n; i++) underlyingTokens[lpToken].push(UnderlyingToken(tokens[i], ERC20Upgradeable(tokens[i]).decimals()));
+        for (uint256 i = 0; i < n; i++) underlyingTokens[lpToken].push(tokens[i]);
     }
 }
