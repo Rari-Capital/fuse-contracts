@@ -48,7 +48,7 @@ contract UniswapLpTokenPriceOracle is PriceOracle {
     }
 
     /**
-     * @dev Fetches the fair LP token token/ETH price from Uniswap, with 18 decimals of precision.
+     * @dev Fetches the fair LP token/ETH price from Uniswap, with 18 decimals of precision.
      */
     function _price(address token) internal view virtual returns (uint) {
         IUniswapV2Pair pair = IUniswapV2Pair(token);
