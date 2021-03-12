@@ -23,6 +23,8 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     address public admin;
 
+    address constant private WETH_ADDRESS = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
     /**
      * @dev Controls if `admin` can overwrite existing assignments of oracles to underlying tokens.
      */
@@ -74,6 +76,19 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
     event NewAdmin(address oldAdmin, address newAdmin);
 
     /**
+     * @dev Changes ability of admin to overwrite to false. This is irreversible!
+     */
+    function revokeCanAdminOverwrite() external onlyAdmin {
+        canAdminOverwrite = false;
+        emit RevokeCanAdminOverwrite(msg.sender, false);
+    }
+
+    /**
+     * @dev Event emitted when `canAdminOverwrite` is changed.
+     */
+    event RevokeCanAdminOverwrite(address admin, bool canOverwrite);
+
+    /**
      * @dev Modifier that checks if `msg.sender == admin`.
      */
     modifier onlyAdmin {
@@ -92,7 +107,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         address underlying = address(CErc20(address(cToken)).underlying());
 
         // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+        if (underlying == WETH_ADDRESS) return 1e18;
 
         // Get underlying price from assigned oracle
         return oracles[underlying].getUnderlyingPrice(cToken);
@@ -103,7 +118,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     function price(address underlying) external override view returns (uint) {
         // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+        if (underlying == WETH_ADDRESS) return 1e18;
 
         // Get underlying price from assigned oracle
         return BasePriceOracle(address(oracles[underlying])).price(underlying);

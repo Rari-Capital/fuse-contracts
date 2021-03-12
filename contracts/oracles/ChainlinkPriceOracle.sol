@@ -20,6 +20,8 @@ import "./BasePriceOracle.sol";
 contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
+    address constant private WETH_ADDRESS = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
     /**
      * @notice Maps ERC20 token addresses to ETH-based Chainlink price feed contracts.
      */
@@ -46,7 +48,7 @@ contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
     AggregatorV3Interface public constant BTC_ETH_PRICE_FEED = AggregatorV3Interface(0xdeb288F737066589598e9214E782fa5A8eD689e8);
 
     /**
-     * @notice The maxmimum number of seconds elapsed since the round was last updated before the price is considered stale. If set to 0, no limit is enforced.
+     * @notice The maximum number of seconds elapsed since the round was last updated before the price is considered stale. If set to 0, no limit is enforced.
      */
     uint256 public maxSecondsBeforePriceIsStale;
     
@@ -168,7 +170,7 @@ contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
      */
     function _price(address underlying) internal view returns (uint) {
         // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+        if (underlying == WETH_ADDRESS) return 1e18;
 
         // Get token/ETH price from Chainlink
         if (address(ethPriceFeeds[underlying]) != address(0)) {

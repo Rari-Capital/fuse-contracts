@@ -30,12 +30,12 @@ contract Keep3rPriceOracle is PriceOracle, BasePriceOracle {
     /**
      * @dev mStable imUSD ERC20 token contract object.
      */
-    Keep3rV1Oracle public oracle = Keep3rV1Oracle(0x73353801921417F465377c8d898c6f4C0270282C);
+    Keep3rV1Oracle immutable public oracle;
 
     /**
      * @dev WETH token contract address.
      */
-    address constant public WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant public WETH_ADDRESS = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     
     /**
      * @dev Returns the price in ETH of the token underlying `cToken` (implements `PriceOracle`).
@@ -49,18 +49,17 @@ contract Keep3rPriceOracle is PriceOracle, BasePriceOracle {
 
         // Get price, format, and return
         uint256 baseUnit = 10 ** uint256(ERC20Upgradeable(underlying).decimals());
-        return _price(underlying).mul(1e18).div(baseUnit);
+        return _price(underlying, baseUnit).mul(1e18).div(baseUnit);
     }
     
     /**
      * @dev Internal function returning the price in ETH of `underlying`.
      */
-    function _price(address underlying) internal view returns (uint) {
+    function _price(address underlying, uint256 baseUnit) internal view returns (uint) {
         // Return 1e18 for WETH
         if (underlying == WETH_ADDRESS) return 1e18;
 
         // Call Keep3r for ERC20/ETH price and return
-        uint256 baseUnit = 10 ** uint256(ERC20Upgradeable(underlying).decimals());
         return oracle.current(underlying, baseUnit, WETH_ADDRESS);
     }
 
@@ -68,6 +67,7 @@ contract Keep3rPriceOracle is PriceOracle, BasePriceOracle {
      * @dev Returns the price in ETH of `underlying` (implements `BasePriceOracle`).
      */
     function price(address underlying) external override view returns (uint) {
-        return _price(underlying);
+        uint256 baseUnit = 10 ** uint256(ERC20Upgradeable(underlying).decimals());
+        return _price(underlying, baseUnit);
     }
 }
