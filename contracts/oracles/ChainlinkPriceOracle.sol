@@ -20,7 +20,7 @@ import "./BasePriceOracle.sol";
 contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
-    address constant private WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant private WETH_ADDRESS = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     /**
      * @notice Maps ERC20 token addresses to ETH-based Chainlink price feed contracts.

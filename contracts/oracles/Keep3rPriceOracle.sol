@@ -30,13 +30,12 @@ contract Keep3rPriceOracle is PriceOracle, BasePriceOracle {
     /**
      * @dev mStable imUSD ERC20 token contract object.
      */
-     // jmonteer: I would change this to immutable and let it be set in constructor
     Keep3rV1Oracle immutable public oracle;
 
     /**
      * @dev WETH token contract address.
      */
-    address constant public WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant public WETH_ADDRESS = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     
     /**
      * @dev Returns the price in ETH of the token underlying `cToken` (implements `PriceOracle`).

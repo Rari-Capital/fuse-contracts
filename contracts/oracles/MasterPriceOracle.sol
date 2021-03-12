@@ -23,7 +23,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     address public admin;
 
-    address constant private WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant private WETH_ADDRESS = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     /**
      * @dev Controls if `admin` can overwrite existing assignments of oracles to underlying tokens.
@@ -75,13 +75,18 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     event NewAdmin(address oldAdmin, address newAdmin);
 
-    // jmonteer: does it make sense to have canAdminOverwrite state variable without a setter? if it does, change it to immutable
-    function setCanAdminOverwrite(bool _canAdminOverwrite) external onlyAdmin {
-        canAdminOverwrite = _canAdminOverwrite;
-        emit ChangeAdminOverwrite(msg.sender, _canAdminOverwrite);
+    /**
+     * @dev Changes ability of admin to overwrite to false. This is irreversible!
+     */
+    function revokeCanAdminOverwrite() external onlyAdmin {
+        canAdminOverwrite = false;
+        emit RevokeCanAdminOverwrite(msg.sender, false);
     }
 
-    event ChangeAdminOverwrite(address admin, bool canOverwrite);
+    /**
+     * @dev Event emitted when `canAdminOverwrite` is changed.
+     */
+    event RevokeCanAdminOverwrite(address admin, bool canOverwrite);
 
     /**
      * @dev Modifier that checks if `msg.sender == admin`.
