@@ -34,7 +34,9 @@ contract RecursivePriceOracle is PriceOracle {
     AggregatorV3Interface public constant ETH_USD_PRICE_FEED = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
 
     /**
-     * @dev Returns the price in ETH of the token underlying `cToken` (implements `PriceOracle`).
+     * @notice Returns the price in ETH of the token underlying `cToken`.
+     * @dev Implements the `PriceOracle` interface for Fuse pools (and Compound v2).
+     * @return Price in ETH of the token underlying `cToken`, scaled by `10 ** (36 - underlyingDecimals)`.
      */
     function getUnderlyingPrice(CToken cToken) external override view returns (uint) {
         // Get cToken's underlying cToken

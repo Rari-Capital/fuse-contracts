@@ -31,10 +31,9 @@ contract BalancerLpTokenPriceOracle is PriceOracle, BNum {
     }
 
     /**
-     * @notice Get the underlying price of a cToken.
-     * @dev Implements the PriceOracle interface for Fuse pools (and Compound v2).
-     * @param cToken The cToken address for price retrieval.
-     * @return Price denominated in ETH, with 18 decimals, for the given cToken address.
+     * @notice Returns the price in ETH of the token underlying `cToken`.
+     * @dev Implements the `PriceOracle` interface for Fuse pools (and Compound v2).
+     * @return Price in ETH of the token underlying `cToken`, scaled by `10 ** (36 - underlyingDecimals)`.
      */
     function getUnderlyingPrice(CToken cToken) external override view returns (uint) {
         address underlying = CErc20(address(cToken)).underlying();

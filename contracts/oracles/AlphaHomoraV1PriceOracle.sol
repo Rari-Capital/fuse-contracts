@@ -23,7 +23,9 @@ contract AlphaHomoraV1PriceOracle is PriceOracle {
     Bank constant public IBETH = Bank(0x67B66C99D3Eb37Fa76Aa3Ed1ff33E8e39F0b9c7A);
 
     /**
-     * @dev Returns the price in ETH of the token underlying `cToken` (implements `PriceOracle`).
+     * @notice Returns the price in ETH of the token underlying `cToken`.
+     * @dev Implements the `PriceOracle` interface for Fuse pools (and Compound v2).
+     * @return Price in ETH of the token underlying `cToken`, scaled by `10 ** (36 - underlyingDecimals)`.
      */
     function getUnderlyingPrice(CToken cToken) external override view returns (uint) {
         require(CErc20(address(cToken)).underlying() == address(IBETH));
