@@ -50,8 +50,8 @@ contract CurveLpTokenPriceOracle is PriceOracle {
 
     /**
      * @dev Fetches the fair LP token/ETH price from Curve, with 18 decimals of precision.
-     * @param lpToken The LP token contract address for price retrieval.
      * Source: https://github.com/AlphaFinanceLab/homora-v2/blob/master/contracts/oracle/CurveOracle.sol
+     * @param lpToken The LP token contract address for price retrieval.
      */
     function _price(address lpToken) internal view virtual returns (uint) {
       address pool = poolOf[lpToken];
