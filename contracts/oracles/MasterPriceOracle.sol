@@ -103,6 +103,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
 
         // Get underlying price from assigned oracle
+        require(address(oracles[underlying]) != address(0), "Price oracle not found for this underlying token address.");
         return oracles[underlying].getUnderlyingPrice(cToken);
     }
 
@@ -114,6 +115,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
 
         // Get underlying price from assigned oracle
+        require(address(oracles[underlying]) != address(0), "Price oracle not found for this underlying token address.");
         return BasePriceOracle(address(oracles[underlying])).price(underlying);
     }
 }
