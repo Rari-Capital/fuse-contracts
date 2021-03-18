@@ -20,7 +20,7 @@ module.exports = async function(deployer, network, accounts) {
   }
   
   // Deploy FusePoolDirectory
-  await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
+  var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
   
   // Deploy FuseSafeLiquidator
   await deployer.deploy(FuseSafeLiquidator);
@@ -32,8 +32,12 @@ module.exports = async function(deployer, network, accounts) {
   await deployProxy(FusePoolLens, [FusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
 
   // Set pool limits
-  await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(1e18), web3.utils.toBN(350e18), web3.utils.toBN(1e18));
+  await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(1e18), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1));
 
   // Live network: transfer ownership of deployed contracts from the deployer to the owner
-  if (["live", "live-fork"].indexOf(network) >= 0) await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);
+  if (["live", "live-fork"].indexOf(network) >= 0) {
+    await fusePoolDirectory.transferOwnership(process.env.LIVE_OWNER);
+    await fuseFeeDistributor.transferOwnership(process.env.LIVE_OWNER);
+    await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);
+  }
 };
