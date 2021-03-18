@@ -233,32 +233,27 @@ contract FusePoolLens is Initializable {
      * @return The `name` and `symbol`.
      */
     function getTokenNameAndSymbol(address token) internal view returns (string memory, string memory) {
+        // MKR is a DSToken and uses bytes32
+        if (token == 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2) return ("Maker", "MKR");
+        if (token == 0xB8c77482e45F1F44dE1745F52C74426C631bDD52) return ("BNB", "BNB");
+
+        // Get name and symbol from token contract
         ERC20Upgradeable tokenContract = ERC20Upgradeable(token);
-        string memory name = "";
-        string memory symbol = "";
+        string memory name = tokenContract.name();
+        string memory symbol = tokenContract.symbol();
 
-        try tokenContract.name() returns (string memory _name) {
-            name = _name;
-            symbol = tokenContract.symbol();
+        // Check for Uniswap V2/SushiSwap pair
+        try IUniswapV2Pair(token).token0() returns (address _token0) {
+            bool isUniswapToken = keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked("Uniswap V2")) && keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked("UNI-V2"));
+            bool isSushiSwapToken = !isUniswapToken && keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked("SushiSwap LP Token")) && keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked("SLP"));
 
-            try IUniswapV2Pair(token).token0() returns (address _token0) {
-                bool isUniswapToken = keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked("Uniswap V2")) && keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked("UNI-V2"));
-                bool isSushiSwapToken = !isUniswapToken && keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked("SushiSwap LP Token")) && keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked("SLP"));
-
-                if (isUniswapToken || isSushiSwapToken) {
-                    ERC20Upgradeable token0 = ERC20Upgradeable(_token0);
-                    ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(token).token1());
-                    name = string(abi.encodePacked(isSushiSwapToken ? "SushiSwap " : "Uniswap ", token0.symbol(), "/", token1.symbol(), " LP"));
-                    symbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
-                }
-            } catch { }
-        } catch {
-            // MKR is a DSToken and uses bytes32
-            if (token == 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2) {
-                name = "Maker";
-                symbol = "MKR";
+            if (isUniswapToken || isSushiSwapToken) {
+                ERC20Upgradeable token0 = ERC20Upgradeable(_token0);
+                ERC20Upgradeable token1 = ERC20Upgradeable(IUniswapV2Pair(token).token1());
+                name = string(abi.encodePacked(isSushiSwapToken ? "SushiSwap " : "Uniswap ", token0.symbol(), "/", token1.symbol(), " LP"));
+                symbol = string(abi.encodePacked(token0.symbol(), "-", token1.symbol()));
             }
-        }
+        } catch { }
 
         return (name, symbol);
     }
