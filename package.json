@@ -29,7 +29,7 @@
     "@openzeppelin/truffle-upgrades": "^1.1.0",
     "@truffle/hdwallet-provider": "^1.0.36",
     "dotenv": "^8.2.0",
-    "ganache-core": "^2.11.3-beta.0",
+    "ganache-core": "^2.13.2",
     "truffle": "^5.1.45"
   },
   "dependencies": {
