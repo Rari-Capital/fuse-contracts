@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/Rari-Capital/fuse-contracts#readme",
   "devDependencies": {
-    "@openzeppelin/truffle-upgrades": "^1.1.0",
+    "@openzeppelin/truffle-upgrades": "^1.5.0",
     "@truffle/hdwallet-provider": "^1.0.36",
     "dotenv": "^8.2.0",
     "ganache-core": "^2.13.2",
