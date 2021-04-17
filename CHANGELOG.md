@@ -1,5 +1,9 @@
 # Changelog
 
+## `v1.0.3` (contracts deployed 2021-04-06; all code pushed 2021-04-17)
+
+* Created `UniswapTwapPriceOracle`.
+
 ## `v1.0.2` (contracts deployed 2021-04-02; all code pushed 2021-04-17)
 
 * Created `Keep3rV2PriceOracle`.
