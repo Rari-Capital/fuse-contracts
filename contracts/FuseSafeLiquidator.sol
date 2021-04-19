@@ -229,11 +229,11 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     }
 
     /**
-     * @dev Receives ETH from liquidations and flashloans.
-     * Requires that `msg.sender` is a CToken or the Uniswap V2 Router.
+     * @dev Receives ETH from WETH, liquidations, and flashloans.
+     * Requires that `msg.sender` is WETH, a CToken, or the Uniswap V2 Router.
      */
     receive() external payable {
-        require(msg.sender == UNISWAP_V2_ROUTER_02_ADDRESS || CToken(msg.sender).isCToken(), "Sender is not a CToken or the Uniswap V2 Router.");
+        require(msg.sender == WETH_ADDRESS || msg.sender == UNISWAP_V2_ROUTER_02_ADDRESS || CToken(msg.sender).isCToken(), "Sender is not WETH, a CToken, or the Uniswap V2 Router.");
     }
 
     /**
