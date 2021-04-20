@@ -17,7 +17,7 @@ import "./external/compound/PriceOracle.sol";
 /**
  * @title FusePoolDirectory
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice FusePoolDirectory is a directory for Fuse money market pools.
+ * @notice FusePoolDirectory is a directory for Fuse interest rate pools.
  */
 contract FusePoolDirectory is OwnableUpgradeable {
     /**
@@ -32,7 +32,7 @@ contract FusePoolDirectory is OwnableUpgradeable {
     }
 
     /**
-     * @dev Struct for a Fuse money market pool.
+     * @dev Struct for a Fuse interest rate pool.
      */
     struct FusePool {
         string name;
@@ -43,7 +43,7 @@ contract FusePoolDirectory is OwnableUpgradeable {
     }
 
     /**
-     * @dev Array of Fuse money market pools.
+     * @dev Array of Fuse interest rate pools.
      */
     FusePool[] public pools;
 
@@ -149,7 +149,7 @@ contract FusePoolDirectory is OwnableUpgradeable {
         comptrollerImplementation._become(unitroller);
         Comptroller comptrollerProxy = Comptroller(proxy);
 
-        // Set money market parameters
+        // Set pool parameters
         comptrollerProxy._setCloseFactor(closeFactor);
         comptrollerProxy._setMaxAssets(maxAssets);
         comptrollerProxy._setLiquidationIncentive(liquidationIncentive);

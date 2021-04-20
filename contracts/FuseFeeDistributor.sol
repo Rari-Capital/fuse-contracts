@@ -15,7 +15,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
 /**
  * @title FuseFeeDistributor
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice FuseFeeDistributor controls and receives protocol fees from Fuse pools.
+ * @notice FuseFeeDistributor controls and receives protocol fees from Fuse pools and relays admin actions to Fuse pools.
  */
 contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
