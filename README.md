@@ -1,6 +1,6 @@
 # Fuse by Rari Capital: Smart Contracts
 
-This repository contains the Solidity source code for the smart contracts behind Fuse's interest rate pool pool directory. See [here for the Rari dApp](https://github.com/Rari-Capital/rari-dapp) or [here for the Fuse SDK](https://github.com/Rari-Capital/rari-dApp/tree/master/src/fuse-sdk).
+This repository contains the Solidity source code for the smart contracts behind Fuse's interest rate pool directory. See [here for the Rari dApp](https://github.com/Rari-Capital/rari-dapp) or [here for the Fuse SDK](https://github.com/Rari-Capital/rari-dApp/tree/master/src/fuse-sdk).
 
 ## How it works
 
