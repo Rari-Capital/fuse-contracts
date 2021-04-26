@@ -263,7 +263,17 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * Requires that `msg.sender` is WETH, a CToken, or a Uniswap V2 Router.
      */
     receive() external payable {
-        require(msg.sender == WETH_ADDRESS || IUniswapV2Router02(msg.sender).factory() != address(0) || CToken(msg.sender).isCToken(), "Sender is not WETH, a CToken, or a Uniswap V2 Router.");
+        if (msg.sender != WETH_ADDRESS) {
+            try IUniswapV2Router02(msg.sender).factory() returns (address factory) {
+                require(factory != address(0), "Sender is not WETH, a CToken, or a Uniswap V2 Router.");
+            } catch {
+                try CToken(msg.sender).isCToken() returns (bool isCToken) {
+                    require(isCToken, "Sender is not WETH, a CToken, or a Uniswap V2 Router.");
+                } catch {
+                    revert("Sender is not WETH, a CToken, or a Uniswap V2 Router.");
+                }
+            }
+        }
     }
 
     /**
