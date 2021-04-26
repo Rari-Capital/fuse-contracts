@@ -16,6 +16,7 @@ import "./external/aave/IWETH.sol";
 import "./external/uniswap/IUniswapV2Router02.sol";
 import "./external/uniswap/IUniswapV2Callee.sol";
 import "./external/uniswap/IUniswapV2Pair.sol";
+import "./external/uniswap/IUniswapV2Factory.sol";
 import "./external/uniswap/UniswapV2Library.sol";
 
 import "./external/alpha/ISafeBox.sol";
@@ -220,7 +221,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         // Flashloan via Uniswap
         require(repayAmount > 0, "Repay amount must be greater than 0.");
         address underlyingBorrow = cErc20.underlying();
-        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(uniswapV2RouterForBorrow.factory(), underlyingBorrow, WETH_ADDRESS));
+        IUniswapV2Pair pair = IUniswapV2Pair(IUniswapV2Factory(uniswapV2RouterForBorrow.factory()).getPair(underlyingBorrow, WETH_ADDRESS));
         address token0 = pair.token0();
         pair.swap(token0 == underlyingBorrow ? repayAmount : 0, token0 != underlyingBorrow ? repayAmount : 0, address(this), msg.data);
 
@@ -329,7 +330,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         // Check side of the flashloan to repay: if input token (underlying collateral) is part of flashloan, repay it (to avoid reentracy error)
         if (address(uniswapV2Router) == UNISWAP_V2_ROUTER_02_ADDRESS && address(underlyingCollateral) == (cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)) {
             // Get tokens required to repay flashloan
-            uint256 tokensRequired = UniswapV2Library.getAmountsIn(uniswapV2Router.factory(), repayAmount, array(WETH_ADDRESS, address(underlyingCollateral)))[0];
+            uint256 tokensRequired = getAmountIn(repayAmount, uniswapV2Router, WETH_ADDRESS, address(underlyingCollateral));
 
             // Repay flashloan in non-WETH tokens
             require(tokensRequired <= underlyingCollateralSeized, "Flashloan return amount greater than seized collateral.");
@@ -361,6 +362,15 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     }
 
     /**
+     * @dev Get swap amount in given amount out, Uniswap V2 router, and tokens.
+     */
+    function getAmountIn(uint256 amountOut, IUniswapV2Router02 uniswapV2Router, address tokenIn, address tokenOut) internal view returns (uint256) {
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(IUniswapV2Factory(uniswapV2Router.factory()).getPair(tokenIn, tokenOut)).getReserves();
+        (uint256 reserveIn, uint256 reserveOut) = tokenIn < tokenOut ? (reserve0, reserve1) : (reserve1, reserve0);
+        uint256 tokensRequired = UniswapV2Library.getAmountIn(amountOut, reserveIn, reserveOut);
+    }
+
+    /**
      * @dev Liquidate unhealthy token borrow, exchange seized collateral, return flashloaned funds, and exchange profit.
      */
     function postFlashLoanTokens(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, LiquidationStrategy liquidationStrategy, bytes memory strategyData) private returns (address) {
@@ -389,7 +399,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             // Get flashloan repay amount in terms of WETH collateral via Uniswap router
             // uniswapV2RouterForCollateral is ignored because it should be the same as uniswapV2RouterForBorrow
             uint256 underlyingCollateralSeized = address(this).balance;
-            uint256 wethRequired = UniswapV2Library.getAmountsIn(uniswapV2RouterForBorrow.factory(), repayAmount, array(WETH_ADDRESS, address(underlyingBorrow)))[0];
+            uint256 wethRequired = getAmountIn(repayAmount, uniswapV2RouterForBorrow, WETH_ADDRESS, address(underlyingBorrow));
 
             // Repay flashloan
             require(wethRequired <= underlyingCollateralSeized, "Seized ETH collateral not enough to repay flashloan.");
@@ -416,7 +426,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
                 return address(underlyingCollateral);
             } else {
                 // Get WETH required to repay flashloan
-                uint256 wethRequired = UniswapV2Library.getAmountsIn(uniswapV2RouterForBorrow.factory(), repayAmount, array(WETH_ADDRESS, address(underlyingBorrow)))[0];
+                uint256 wethRequired = getAmountIn(repayAmount, uniswapV2RouterForBorrow, WETH_ADDRESS, address(underlyingBorrow));
 
                 if (address(underlyingCollateral) != WETH_ADDRESS) {
                     // Approve to Uniswap router
