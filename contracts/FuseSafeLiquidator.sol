@@ -62,8 +62,16 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         if (to == from) return;
 
         if (from == address(0)) {
-            // Exchange from ETH to tokens
-            uniswapV2Router.swapExactETHForTokens{value: address(this).balance}(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
+            if (to == WETH_ADDRESS) {
+                // Deposit all ETH to WETH
+                WETH.deposit{value: address(this).balance}();
+            } else {
+                // Exchange from ETH to tokens
+                uniswapV2Router.swapExactETHForTokens{value: address(this).balance}(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
+            }
+        } else if (from == WETH_ADDRESS && to == address(0)) {
+            // Withdraw all WETH to ETH
+            WETH.withdraw(IERC20Upgradeable(WETH_ADDRESS).balanceOf(address(this)));
         } else {
             // Approve input tokens
             IERC20Upgradeable fromToken = IERC20Upgradeable(from);
@@ -84,6 +92,9 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param cTokenCollateral The cToken collateral to be liquidated.
      * @param minOutputAmount The minimum amount of collateral to seize (or the minimum exchange output if applicable) required for execution. Reverts if this condition is not met.
      * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
+     * @param uniswapV2Router The UniswapV2Router to use to convert the seized underlying collateral.
+     * @param liquidationStrategy The LiquidationStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * @param strategyData The data for the chosen LiquidationStrategy, if any.
      */
     function safeLiquidate(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minOutputAmount, address exchangeSeizedTo, IUniswapV2Router02 uniswapV2Router, LiquidationStrategy liquidationStrategy, bytes memory strategyData) external {
         // Transfer tokens in, approve to cErc20, and liquidate borrow
@@ -127,6 +138,9 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param cErc20Collateral The cErc20 collateral contract to be liquidated.
      * @param minOutputAmount The minimum amount of collateral to seize (or the minimum exchange output if applicable) required for execution. Reverts if this condition is not met.
      * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
+     * @param uniswapV2Router The UniswapV2Router to use to convert the seized underlying collateral.
+     * @param liquidationStrategy The LiquidationStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * @param strategyData The data for the chosen LiquidationStrategy, if any.
      */
     function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo, IUniswapV2Router02 uniswapV2Router, LiquidationStrategy liquidationStrategy, bytes memory strategyData) external payable {
         // Liquidate ETH borrow
@@ -240,19 +254,19 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param cErc20Collateral The CErc20 collateral contract to be liquidated.
      * @param minProfitAmount The minimum amount of profit required for execution (in terms of `exchangeProfitTo`). Reverts if this condition is not met.
      * @param exchangeProfitTo If set to an address other than `cErc20Collateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
-     * @param uniswapV2Router The UniswapV2Router to use to convert the underlying collateral to ETH.
+     * @param uniswapV2RouterForCollateral The UniswapV2Router to use to convert the underlying collateral to ETH.
      * @param liquidationStrategy The LiquidationStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
      * @param strategyData The data for the chosen LiquidationStrategy, if any.
      */
-    function safeLiquidateToEthWithFlashLoan(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2Router, LiquidationStrategy liquidationStrategy, bytes memory strategyData) external {
+    function safeLiquidateToEthWithFlashLoan(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForCollateral, LiquidationStrategy liquidationStrategy, bytes memory strategyData) external {
         // Flashloan via Uniswap
         require(repayAmount > 0, "Repay amount must be greater than 0.");
-        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(UNISWAP_V2_ROUTER_02.factory(), address(uniswapV2Router) == UNISWAP_V2_ROUTER_02_ADDRESS && cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, WETH_ADDRESS)); // Use USDC unless collateral is USDC, in which case we use WBTC to avoid a reentrancy error
+        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(UNISWAP_V2_ROUTER_02.factory(), address(uniswapV2RouterForCollateral) == UNISWAP_V2_ROUTER_02_ADDRESS && cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, WETH_ADDRESS)); // Use USDC unless collateral is USDC, in which case we use WBTC to avoid a reentrancy error when exchanging the collateral to repay the borrow
         address token0 = pair.token0();
         pair.swap(token0 == WETH_ADDRESS ? repayAmount : 0, token0 != WETH_ADDRESS ? repayAmount : 0, address(this), msg.data);
 
         // Exchange profit if necessary
-        if (exchangeProfitTo != _liquidatorProfitExchangeSource) UNISWAP_V2_ROUTER_02.swapExactETHForTokens{value: address(this).balance}(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
+        exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, UNISWAP_V2_ROUTER_02);
 
         // Transfer profit to msg.sender
         transferSeizedFunds(exchangeProfitTo, minProfitAmount);
@@ -280,17 +294,16 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @dev Callback function for Uniswap flashloans.
      */
     function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) external override {
-        // Decode common params
-        (address borrower, uint256 repayAmount, address cToken, address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo) = abi.decode(data[36:196], (address, uint256, address, address, uint256, address));
-
-        // Calculate flashloan return amount
-        uint256 flashLoanReturnAmount = repayAmount.mul(1000).div(997);
-        if (repayAmount.mul(1000).mod(997) > 0) flashLoanReturnAmount++; // Round up if division resulted in a remainder
+        (address cToken) = abi.decode(data[68:100], (address));
 
         // Liquidate unhealthy borrow, exchange seized collateral, return flashloaned funds, and exchange profit
         if (CToken(cToken).isCEther()) {
             // Decode params
-            (IUniswapV2Router02 uniswapV2Router, LiquidationStrategy liquidationStrategy, bytes memory strategyData) = abi.decode(data[196:], (IUniswapV2Router02, LiquidationStrategy, bytes));
+            (address borrower, uint256 repayAmount, , address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2Router, LiquidationStrategy liquidationStrategy, bytes memory strategyData) = abi.decode(data[4:], (address, uint256, address, address, uint256, address, IUniswapV2Router02, LiquidationStrategy, bytes));
+
+            // Calculate flashloan return amount
+            uint256 flashLoanReturnAmount = repayAmount.mul(1000).div(997);
+            if (repayAmount.mul(1000).mod(997) > 0) flashLoanReturnAmount++; // Round up if division resulted in a remainder
 
             // Post WETH flashloan
             // Cache liquidation profit token (or the zero address for ETH) for use as source for exchange later
@@ -298,7 +311,11 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         }
         else {
             // Decode params
-            (IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, LiquidationStrategy liquidationStrategy, bytes memory strategyData) = abi.decode(data[196:], (IUniswapV2Router02, IUniswapV2Router02, LiquidationStrategy, bytes));
+            (address borrower, uint256 repayAmount, , address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, LiquidationStrategy liquidationStrategy, bytes memory strategyData) = abi.decode(data[4:], (address, uint256, address, address, uint256, address, IUniswapV2Router02, IUniswapV2Router02, LiquidationStrategy, bytes));
+
+            // Calculate flashloan return amount
+            uint256 flashLoanReturnAmount = repayAmount.mul(1000).div(997);
+            if (repayAmount.mul(1000).mod(997) > 0) flashLoanReturnAmount++; // Round up if division resulted in a remainder
 
             // Post token flashloan
             // Cache liquidation profit token (or the zero address for ETH) for use as source for exchange later
@@ -337,7 +354,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         // Redeem custom collateral if liquidation strategy is set
         if (liquidationStrategy != LiquidationStrategy.None) (underlyingCollateral, underlyingCollateralSeized) = redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, liquidationStrategy, strategyData);
 
-        // Check side of the flashloan to repay: if input token (underlying collateral) is part of flashloan, repay it (to avoid reentracy error)
+        // Check side of the flashloan to repay: if input token (underlying collateral) is part of flashloan, repay it (to avoid reentracy error); otherwise, convert to WETH and repay WETH
         if (address(uniswapV2Router) == UNISWAP_V2_ROUTER_02_ADDRESS && address(underlyingCollateral) == (cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)) {
             // Get tokens required to repay flashloan
             uint256 tokensRequired = getAmountIn(repayAmount, uniswapV2Router, WETH_ADDRESS, address(underlyingCollateral));
@@ -358,17 +375,20 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
                     // Swap collateral tokens for WETH via Uniswap router
                     if (exchangeProfitTo == address(underlyingCollateral)) uniswapV2Router.swapTokensForExactTokens(flashLoanReturnAmount, underlyingCollateralSeized, array(address(underlyingCollateral), WETH_ADDRESS), address(this), block.timestamp);
-                    else uniswapV2Router.swapExactTokensForTokens(underlyingCollateralSeized, flashLoanReturnAmount, array(address(underlyingCollateral), WETH_ADDRESS), address(this), block.timestamp);
+                    else {
+                        uniswapV2Router.swapExactTokensForTokens(underlyingCollateralSeized, flashLoanReturnAmount, array(address(underlyingCollateral), WETH_ADDRESS), address(this), block.timestamp);
+                        underlyingCollateral = IERC20Upgradeable(WETH_ADDRESS);
+                    }
                 }
             }
 
             // Repay flashloan in WETH
-            require(flashLoanReturnAmount <= IERC20Upgradeable(address(WETH)).balanceOf(address(this)), "Flashloan return amount greater than WETH exchanged from seized collateral.");
+            require(flashLoanReturnAmount <= IERC20Upgradeable(WETH_ADDRESS).balanceOf(address(this)), "Flashloan return amount greater than WETH exchanged from seized collateral.");
             require(WETH.transfer(msg.sender, flashLoanReturnAmount), "Failed to transfer WETH back to flashlender.");
         }
 
-        // Return the profited token (underlying collateral if same as exchangeProfitTo; otherwise, WETH)
-        return exchangeProfitTo == address(underlyingCollateral) ? address(underlyingCollateral) : WETH_ADDRESS;
+        // Return the profited token
+        return address(underlyingCollateral);
     }
 
     /**
@@ -397,6 +417,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         uint256 redeemResult = cTokenCollateral.redeem(seizedCTokenAmount);
         require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
 
+        // Repay flashloan
         return repayTokenFlashLoan(repayAmount, cTokenCollateral, exchangeProfitTo, flashLoanReturnAmount, uniswapV2RouterForBorrow, uniswapV2RouterForCollateral, liquidationStrategy, strategyData, underlyingBorrow);
     }
 
