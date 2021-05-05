@@ -540,14 +540,22 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
         }
 
-        // Check if underlying collateral has an Alpha Homora V2 SafeBoxETH (i.e., ibETHv2) or SafeBox (e.g., ibDAIv2) strategy associated with it
-        if (strategy == LiquidationStrategy.AlphaHomoraV2SafeBoxETH || strategy == LiquidationStrategy.AlphaHomoraV2SafeBox) { // 0xeEa3311250FE4c3268F8E684f7C87A82fF183Ec1 0x020eDC614187F9937A1EfEeE007656C6356Fb13A
+        // Check if underlying collateral has an Alpha Homora V2 SafeBoxETH (i.e., ibETHv2) strategy associated with it
+        if (strategy == LiquidationStrategy.AlphaHomoraV2SafeBoxETH) { // 0xeEa3311250FE4c3268F8E684f7C87A82fF183Ec1
             // Redeem ibTokenV2 for underlying ETH or ERC20 token (and store output as new collateral)
             ISafeBox safeBox = ISafeBox(address(underlyingCollateral));
             safeBox.withdraw(underlyingCollateralSeized);
-            underlyingCollateral = IERC20Upgradeable(safeBox.cToken());
-            // underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
-            strategy = strategy == LiquidationStrategy.AlphaHomoraV2SafeBoxETH ? LiquidationStrategy.CEther : LiquidationStrategy.CErc20;
+            underlyingCollateral = IERC20Upgradeable(address(0));
+            underlyingCollateralSeized = address(this).balance;
+        }
+
+        // Check if underlying collateral has an Alpha Homora V2 SafeBox (e.g., ibDAIv2) strategy associated with it
+        if (strategy == LiquidationStrategy.AlphaHomoraV2SafeBox) { // 0x020eDC614187F9937A1EfEeE007656C6356Fb13A
+            // Redeem ibTokenV2 for underlying ETH or ERC20 token (and store output as new collateral)
+            ISafeBox safeBox = ISafeBox(address(underlyingCollateral));
+            safeBox.withdraw(underlyingCollateralSeized);
+            underlyingCollateral = IERC20Upgradeable(safeBox.uToken());
+            underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
         }
         
         // Check if underlying collateral has a cToken strategy associated with it
