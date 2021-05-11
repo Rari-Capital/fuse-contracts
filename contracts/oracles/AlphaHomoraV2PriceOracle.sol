@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 import "../external/compound/PriceOracle.sol";
 import "../external/compound/CToken.sol";
@@ -17,7 +18,7 @@ import "./BasePriceOracle.sol";
  * @dev Implements `PriceOracle`.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract AlphaHomoraV2PriceOracle is PriceOracle {
+contract AlphaHomoraV2PriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
