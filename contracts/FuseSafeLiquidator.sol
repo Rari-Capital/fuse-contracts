@@ -171,7 +171,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
                 // Redeem custom collateral if liquidation strategy is set
                 IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(cErc20Collateral.underlying());
-                if (address(redemptionStrategy) != address(0)) (underlyingCollateral, ) = redeemCustomCollateral(underlyingCollateral, IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), redemptionStrategy, strategyData);
+                if (address(redemptionStrategy) != address(0)) (underlyingCollateral, ) = this.redeemCustomCollateral(underlyingCollateral, IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), redemptionStrategy, strategyData); // redeemCustomCollateral called externally because this safeLiquidate function is payable (for some reason delegatecall fails when called with msg.value > 0)
 
                 // Exchange redeemed collateral if necessary
                 exchangeAllEthOrTokens(address(underlyingCollateral), exchangeSeizedTo, minOutputAmount, uniswapV2Router);
@@ -531,8 +531,9 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
     /**
      * @dev Redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * Public visibility because we have to call this function externally if called from a payable FuseSafeLiquidator function (for some reason delegatecall fails when called with msg.value > 0).
      */
-    function redeemCustomCollateral(IERC20Upgradeable underlyingCollateral, uint256 underlyingCollateralSeized, IRedemptionStrategy strategy, bytes memory strategyData) private returns (IERC20Upgradeable, uint256) {
+    function redeemCustomCollateral(IERC20Upgradeable underlyingCollateral, uint256 underlyingCollateralSeized, IRedemptionStrategy strategy, bytes memory strategyData) public returns (IERC20Upgradeable, uint256) {
         bytes memory returndata = _functionDelegateCall(address(strategy), abi.encodeWithSignature("redeem(address,uint256,bytes)", underlyingCollateral, underlyingCollateralSeized, strategyData));
         return abi.decode(returndata, (IERC20Upgradeable, uint256));
     }
