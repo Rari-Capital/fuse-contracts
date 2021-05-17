@@ -48,10 +48,12 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param from The input ERC20 token address (or the zero address if ETH) to exchange from.
      * @param to The output ERC20 token address (or the zero address if ETH) to exchange to.
      * @param minOutputAmount The minimum output amount of `to` necessary to complete the exchange without reversion.
+     * @param uniswapV2Router The UniswapV2Router02 to use.
      */
     function exchangeAllEthOrTokens(address from, address to, uint256 minOutputAmount, IUniswapV2Router02 uniswapV2Router) private {
         if (to == from) return;
 
+        // From ETH, WETH, or something else?
         if (from == address(0)) {
             if (to == WETH_ADDRESS) {
                 // Deposit all ETH to WETH
@@ -72,6 +74,27 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             // Exchange from tokens to ETH or tokens
             if (to == address(0)) uniswapV2Router.swapExactTokensForETH(inputBalance, minOutputAmount, array(from, WETH_ADDRESS), address(this), block.timestamp);
             else uniswapV2Router.swapExactTokensForTokens(inputBalance, minOutputAmount, from == WETH_ADDRESS || to == WETH_ADDRESS ? array(from, to) : array(from, WETH_ADDRESS, to), address(this), block.timestamp); // Put WETH in the middle of the path if not already a part of the path
+        }
+    }
+
+    /**
+     * @dev Internal function to exchange the entire balance of `from` to at least `minOutputAmount` of `to`.
+     * @param from The input ERC20 token address (or the zero address if ETH) to exchange from.
+     * @param outputAmount The output amount of ETH.
+     * @param uniswapV2Router The UniswapV2Router02 to use.
+     */
+    function exchangeToExactEth(address from, uint256 outputAmount, IUniswapV2Router02 uniswapV2Router) private {
+        // From WETH something else?
+        if (from == WETH_ADDRESS) {
+            // Withdraw WETH to ETH
+            WETH.withdraw(outputAmount);
+        } else {
+            // Approve input tokens
+            IERC20Upgradeable fromToken = IERC20Upgradeable(from);
+            safeApprove(fromToken, address(uniswapV2Router), fromToken.balanceOf(address(this)));
+
+            // Exchange from tokens to ETH
+            uniswapV2Router.swapTokensForExactETH(outputAmount, 0, array(from, WETH_ADDRESS), address(this), block.timestamp);
         }
     }
 
@@ -222,7 +245,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param redemptionStrategy The IRedemptionStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
      * @param strategyData The data for the chosen IRedemptionStrategy, if any.
      */
-    function safeLiquidateToTokensWithFlashLoan(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) external {
+    function safeLiquidateToTokensWithFlashLoan(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData, uint256 ethToCoinbase) external {
         // Flashloan via Uniswap
         require(repayAmount > 0, "Repay amount must be greater than 0.");
         address underlyingBorrow = cErc20.underlying();
@@ -230,11 +253,8 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         address token0 = pair.token0();
         pair.swap(token0 == underlyingBorrow ? repayAmount : 0, token0 != underlyingBorrow ? repayAmount : 0, address(this), msg.data);
 
-        // Exchange profit if necessary
-        exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, uniswapV2RouterForCollateral);
-
-        // Transfer profit to msg.sender
-        transferSeizedFunds(exchangeProfitTo, minProfitAmount);
+        // Exchange profit, send ETH to coinbase if necessary, and transfer seized funds
+        distributeProfit(exchangeProfitTo, minProfitAmount, ethToCoinbase);
     }
 
     /**
@@ -249,18 +269,43 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param redemptionStrategy The IRedemptionStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
      * @param strategyData The data for the chosen IRedemptionStrategy, if any.
      */
-    function safeLiquidateToEthWithFlashLoan(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) external {
+    function safeLiquidateToEthWithFlashLoan(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData, uint256 ethToCoinbase) external {
         // Flashloan via Uniswap
         require(repayAmount > 0, "Repay amount must be greater than 0.");
         IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(UNISWAP_V2_ROUTER_02.factory(), address(uniswapV2RouterForCollateral) == UNISWAP_V2_ROUTER_02_ADDRESS && cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, WETH_ADDRESS)); // Use USDC unless collateral is USDC, in which case we use WBTC to avoid a reentrancy error when exchanging the collateral to repay the borrow
         address token0 = pair.token0();
         pair.swap(token0 == WETH_ADDRESS ? repayAmount : 0, token0 != WETH_ADDRESS ? repayAmount : 0, address(this), msg.data);
 
-        // Exchange profit if necessary
-        exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, UNISWAP_V2_ROUTER_02);
+        // Exchange profit, send ETH to coinbase if necessary, and transfer seized funds
+        distributeProfit(exchangeProfitTo, minProfitAmount, ethToCoinbase);
+    }
 
-        // Transfer profit to msg.sender
-        transferSeizedFunds(exchangeProfitTo, minProfitAmount);
+    /**
+     * Exchange profit, send ETH to coinbase if necessary, and transfer seized funds to sender.
+     */
+    function distributeProfit(address exchangeProfitTo, uint256 minProfitAmount, uint256 ethToCoinbase) private {
+        if (exchangeProfitTo == address(0)) {
+            // Exchange profit if necessary
+            exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, UNISWAP_V2_ROUTER_02);
+
+            // Transfer ETH to block.coinbase if requested
+            if (ethToCoinbase > 0) block.coinbase.call{value: ethToCoinbase}("");
+
+            // Transfer profit to msg.sender
+            transferSeizedFunds(exchangeProfitTo, minProfitAmount);
+        } else {
+            // Transfer ETH to block.coinbase if requested
+            if (ethToCoinbase > 0) {
+                exchangeToExactEth(_liquidatorProfitExchangeSource, ethToCoinbase, UNISWAP_V2_ROUTER_02);
+                block.coinbase.call{value: ethToCoinbase}("");
+            }
+
+            // Exchange profit if necessary
+            exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, UNISWAP_V2_ROUTER_02);
+
+            // Transfer profit to msg.sender
+            transferSeizedFunds(exchangeProfitTo, minProfitAmount);
+        }
     }
 
     /**
