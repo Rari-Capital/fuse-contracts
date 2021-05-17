@@ -10,11 +10,11 @@ import "../external/uniswap/IUniswapV2Router02.sol";
 import "./IRedemptionStrategy.sol";
 
 /**
- * @title UniswapLpTokenLiquidator
- * @notice Exchanges seized Uniswap LP token collateral for underlying tokens for use as a step in a liquidation.
+ * @title BalancerPoolTokenLiquidator
+ * @notice Exchanges seized Balancer Pool Token (BPT) collateral for underlying tokens for use as a step in a liquidation.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract UniswapLpTokenLiquidator is IRedemptionStrategy {
+contract BalancerPoolTokenLiquidator is IRedemptionStrategy {
     /**
      * @notice Redeems custom collateral `token` for an underlying token.
      * @param inputToken The input wrapped token to be redeemed for an underlying token.

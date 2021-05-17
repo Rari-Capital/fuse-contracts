@@ -9,11 +9,11 @@ import "../external/uniswap/IUniswapV2Pair.sol";
 import "./IRedemptionStrategy.sol";
 
 /**
- * @title BalancerPoolTokenLiquidator
- * @notice Exchanges seized Balancer Pool Token (BPT) collateral for underlying tokens for use as a step in a liquidation.
+ * @title UniswapLpTokenLiquidator
+ * @notice Exchanges seized Uniswap V2 LP token collateral for underlying tokens for use as a step in a liquidation.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract BalancerPoolTokenLiquidator is IRedemptionStrategy {
+contract UniswapLpTokenLiquidator is IRedemptionStrategy {
     /**
      * @notice Redeems custom collateral `token` for an underlying token.
      * @param inputToken The input wrapped token to be redeemed for an underlying token.
@@ -36,7 +36,7 @@ contract BalancerPoolTokenLiquidator is IRedemptionStrategy {
         if (swapToken1Path.length > 0 && swapToken1Path[swapToken1Path.length - 1] != token1) uniswapV2Router.swapExactTokensForTokens(amount1, 0, swapToken1Path, address(this), block.timestamp);
 
         // Get new collateral
-        outputToken = IERC20Upgradeable(swapToken0Path[swapToken0Path.length - 1]);
+        outputToken = IERC20Upgradeable(swapToken0Path.length > 0 ? swapToken0Path[swapToken0Path.length - 1] : token0);
         outputAmount = outputToken.balanceOf(address(this));
     }
 }
