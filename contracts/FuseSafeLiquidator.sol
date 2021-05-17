@@ -534,7 +534,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * Public visibility because we have to call this function externally if called from a payable FuseSafeLiquidator function (for some reason delegatecall fails when called with msg.value > 0).
      */
     function redeemCustomCollateral(IERC20Upgradeable underlyingCollateral, uint256 underlyingCollateralSeized, IRedemptionStrategy strategy, bytes memory strategyData) public returns (IERC20Upgradeable, uint256) {
-        bytes memory returndata = _functionDelegateCall(address(strategy), abi.encodeWithSignature("redeem(address,uint256,bytes)", underlyingCollateral, underlyingCollateralSeized, strategyData));
+        bytes memory returndata = _functionDelegateCall(address(strategy), abi.encodeWithSelector(strategy.redeem.selector, underlyingCollateral, underlyingCollateralSeized, strategyData));
         return abi.decode(returndata, (IERC20Upgradeable, uint256));
     }
     

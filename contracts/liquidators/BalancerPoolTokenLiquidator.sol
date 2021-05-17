@@ -3,6 +3,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
 import "../external/balancer/IBalancerPool.sol";
 import "../external/uniswap/IUniswapV2Router02.sol";
@@ -15,6 +16,20 @@ import "./IRedemptionStrategy.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
 contract BalancerPoolTokenLiquidator is IRedemptionStrategy {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    /**
+     * @dev Internal function to approve unlimited tokens of `erc20Contract` to `to`.
+     */
+    function safeApprove(IERC20Upgradeable token, address to, uint256 minAmount) private {
+        uint256 allowance = token.allowance(address(this), to);
+
+        if (allowance < minAmount) {
+            if (allowance > 0) token.safeApprove(to, 0);
+            token.safeApprove(to, uint256(-1));
+        }
+    }
+
     /**
      * @notice Redeems custom collateral `token` for an underlying token.
      * @param inputToken The input wrapped token to be redeemed for an underlying token.
@@ -35,11 +50,15 @@ contract BalancerPoolTokenLiquidator is IRedemptionStrategy {
         require(swapPaths.length == tokens.length, "Swap paths array length must match the number of underlying tokens in the Balancer pool.");
         for (uint256 i = 1; i < swapPaths.length; i++)
             require((swapPaths[0].length > 0 ? swapPaths[0][swapPaths[0].length - 1] : tokens[0]) == (swapPaths[i].length > 0 ? swapPaths[i][swapPaths[i].length - 1] : tokens[i]), "All underlying token swap paths must output the same token.");
-        for (uint256 i = 0; i < swapPaths.length; i++)
-            if (swapPaths[i].length > 0 && swapPaths[i][swapPaths[i].length - 1] != tokens[i]) uniswapV2Router.swapExactTokensForTokens(IERC20Upgradeable(tokens[i]).balanceOf(address(this)), 0, swapPaths[i], address(this), block.timestamp);
+
+        for (uint256 i = 0; i < swapPaths.length; i++) if (swapPaths[i].length > 0 && swapPaths[i][swapPaths[i].length - 1] != tokens[i]) {
+            uint256 swapAmountIn = IERC20Upgradeable(tokens[i]).balanceOf(address(this));
+            safeApprove(IERC20Upgradeable(tokens[i]), address(uniswapV2Router), swapAmountIn);
+            uniswapV2Router.swapExactTokensForTokens(swapAmountIn, 0, swapPaths[i], address(this), block.timestamp);
+        }
 
         // Get new collateral
-        outputToken = IERC20Upgradeable(swapPaths[0][swapPaths[0].length - 1]);
+        outputToken = IERC20Upgradeable(swapPaths[0].length > 0 ? swapPaths[0][swapPaths[0].length - 1] : tokens[0]);
         outputAmount = outputToken.balanceOf(address(this));
     }
 }
