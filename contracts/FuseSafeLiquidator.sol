@@ -84,6 +84,8 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param uniswapV2Router The UniswapV2Router02 to use.
      */
     function exchangeToExactEth(address from, uint256 outputAmount, IUniswapV2Router02 uniswapV2Router) private {
+        if (from == address(0)) return;
+
         // From WETH something else?
         if (from == WETH_ADDRESS) {
             // Withdraw WETH to ETH
@@ -91,10 +93,11 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         } else {
             // Approve input tokens
             IERC20Upgradeable fromToken = IERC20Upgradeable(from);
-            safeApprove(fromToken, address(uniswapV2Router), fromToken.balanceOf(address(this)));
+            uint256 inputBalance = fromToken.balanceOf(address(this));
+            safeApprove(fromToken, address(uniswapV2Router), inputBalance);
 
             // Exchange from tokens to ETH
-            uniswapV2Router.swapTokensForExactETH(outputAmount, 0, array(from, WETH_ADDRESS), address(this), block.timestamp);
+            uniswapV2Router.swapTokensForExactETH(outputAmount, inputBalance, array(from, WETH_ADDRESS), address(this), block.timestamp);
         }
     }
 
@@ -296,7 +299,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     function distributeProfit(address exchangeProfitTo, uint256 minProfitAmount, uint256 ethToCoinbase) private {
         if (exchangeProfitTo == address(0)) {
             // Exchange profit if necessary
-            exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, UNISWAP_V2_ROUTER_02);
+            exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount.add(ethToCoinbase), UNISWAP_V2_ROUTER_02);
 
             // Transfer ETH to block.coinbase if requested
             if (ethToCoinbase > 0) block.coinbase.call{value: ethToCoinbase}("");
@@ -311,7 +314,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             }
 
             // Exchange profit if necessary
-            exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount, UNISWAP_V2_ROUTER_02);
+            exchangeAllEthOrTokens(_liquidatorProfitExchangeSource, exchangeProfitTo, minProfitAmount.add(ethToCoinbase), UNISWAP_V2_ROUTER_02);
 
             // Transfer profit to msg.sender
             transferSeizedFunds(exchangeProfitTo, minProfitAmount);
