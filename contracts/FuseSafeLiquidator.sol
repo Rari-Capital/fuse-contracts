@@ -107,10 +107,10 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param minOutputAmount The minimum amount of collateral to seize (or the minimum exchange output if applicable) required for execution. Reverts if this condition is not met.
      * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      * @param uniswapV2Router The UniswapV2Router to use to convert the seized underlying collateral.
-     * @param redemptionStrategy The IRedemptionStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
-     * @param strategyData The data for the chosen IRedemptionStrategy, if any.
+     * @param redemptionStrategies The IRedemptionStrategy contracts to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * @param strategyData The data for the chosen IRedemptionStrategy contracts, if any.
      */
-    function safeLiquidate(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minOutputAmount, address exchangeSeizedTo, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) external {
+    function safeLiquidate(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minOutputAmount, address exchangeSeizedTo, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy[] memory redemptionStrategies, bytes[] memory strategyData) external {
         // Transfer tokens in, approve to cErc20, and liquidate borrow
         require(repayAmount > 0, "Repay amount (transaction value) must be greater than 0.");
         IERC20Upgradeable underlying = IERC20Upgradeable(cErc20.underlying());
@@ -133,7 +133,12 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
                 } else {
                     // Redeem custom collateral if liquidation strategy is set
                     IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(CErc20(address(cTokenCollateral)).underlying());
-                    if (address(redemptionStrategy) != address(0)) (underlyingCollateral, ) = redeemCustomCollateral(underlyingCollateral, IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), redemptionStrategy, strategyData);
+
+                    if (redemptionStrategies.length > 0) {
+                        require(redemptionStrategies.length == strategyData.length, "IRedemptionStrategy contract array and strategy data bytes array mnust the the same length.");
+                        uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
+                        for (uint256 i = 0; i < redemptionStrategies.length; i++) (underlyingCollateral, underlyingCollateralSeized) = redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, redemptionStrategies[i], strategyData[i]);
+                    }
 
                     // Exchange redeemed token collateral if necessary
                     exchangeAllEthOrTokens(address(underlyingCollateral), exchangeSeizedTo, minOutputAmount, uniswapV2Router);
@@ -153,10 +158,10 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param minOutputAmount The minimum amount of collateral to seize (or the minimum exchange output if applicable) required for execution. Reverts if this condition is not met.
      * @param exchangeSeizedTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      * @param uniswapV2Router The UniswapV2Router to use to convert the seized underlying collateral.
-     * @param redemptionStrategy The IRedemptionStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
-     * @param strategyData The data for the chosen IRedemptionStrategy, if any.
+     * @param redemptionStrategies The IRedemptionStrategy contracts to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * @param strategyData The data for the chosen IRedemptionStrategy contracts, if any.
      */
-    function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) external payable {
+    function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy[] memory redemptionStrategies, bytes[] memory strategyData) external payable {
         // Liquidate ETH borrow
         require(msg.value > 0, "Repay amount (transaction value) must be greater than 0.");
         cEther.liquidateBorrow{value: msg.value}(borrower, CToken(cErc20Collateral));
@@ -171,7 +176,12 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
                 // Redeem custom collateral if liquidation strategy is set
                 IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(cErc20Collateral.underlying());
-                if (address(redemptionStrategy) != address(0)) (underlyingCollateral, ) = this.redeemCustomCollateral(underlyingCollateral, IERC20Upgradeable(underlyingCollateral).balanceOf(address(this)), redemptionStrategy, strategyData); // redeemCustomCollateral called externally because this safeLiquidate function is payable (for some reason delegatecall fails when called with msg.value > 0)
+
+                if (redemptionStrategies.length > 0) {
+                    require(redemptionStrategies.length == strategyData.length, "IRedemptionStrategy contract array and strategy data bytes array mnust the the same length.");
+                    uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
+                    for (uint256 i = 0; i < redemptionStrategies.length; i++) (underlyingCollateral, underlyingCollateralSeized) = this.redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, redemptionStrategies[i], strategyData[i]); // redeemCustomCollateral called externally because this safeLiquidate function is payable (for some reason delegatecall fails when called with msg.value > 0)
+                }
 
                 // Exchange redeemed collateral if necessary
                 exchangeAllEthOrTokens(address(underlyingCollateral), exchangeSeizedTo, minOutputAmount, uniswapV2Router);
@@ -242,10 +252,10 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param exchangeProfitTo If set to an address other than `cTokenCollateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      * @param uniswapV2RouterForBorrow The UniswapV2Router to use to convert the ETH to the underlying borrow (and flashloan the underlying borrow for ETH).
      * @param uniswapV2RouterForCollateral The UniswapV2Router to use to convert the underlying collateral to ETH.
-     * @param redemptionStrategy The IRedemptionStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
-     * @param strategyData The data for the chosen IRedemptionStrategy, if any.
+     * @param redemptionStrategies The IRedemptionStrategy contracts to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * @param strategyData The data for the chosen IRedemptionStrategy contracts, if any.
      */
-    function safeLiquidateToTokensWithFlashLoan(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData, uint256 ethToCoinbase) external {
+    function safeLiquidateToTokensWithFlashLoan(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy[] memory redemptionStrategies, bytes[] memory strategyData, uint256 ethToCoinbase) external {
         // Flashloan via Uniswap
         require(repayAmount > 0, "Repay amount must be greater than 0.");
         address underlyingBorrow = cErc20.underlying();
@@ -266,10 +276,10 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @param minProfitAmount The minimum amount of profit required for execution (in terms of `exchangeProfitTo`). Reverts if this condition is not met.
      * @param exchangeProfitTo If set to an address other than `cErc20Collateral`, exchange seized collateral to this ERC20 token contract address (or the zero address for ETH).
      * @param uniswapV2RouterForCollateral The UniswapV2Router to use to convert the underlying collateral to ETH.
-     * @param redemptionStrategy The IRedemptionStrategy to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
-     * @param strategyData The data for the chosen IRedemptionStrategy, if any.
+     * @param redemptionStrategies The IRedemptionStrategy contracts to use, if any, to redeem "special" collateral tokens (before swapping the output for borrowed tokens to be repaid via Uniswap).
+     * @param strategyData The data for the chosen IRedemptionStrategy contracts, if any.
      */
-    function safeLiquidateToEthWithFlashLoan(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData, uint256 ethToCoinbase) external {
+    function safeLiquidateToEthWithFlashLoan(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy[] memory redemptionStrategies, bytes[] memory strategyData, uint256 ethToCoinbase) external {
         // Flashloan via Uniswap
         require(repayAmount > 0, "Repay amount must be greater than 0.");
         IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(UNISWAP_V2_ROUTER_02.factory(), address(uniswapV2RouterForCollateral) == UNISWAP_V2_ROUTER_02_ADDRESS && cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, WETH_ADDRESS)); // Use USDC unless collateral is USDC, in which case we use WBTC to avoid a reentrancy error when exchanging the collateral to repay the borrow
@@ -335,7 +345,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         // Liquidate unhealthy borrow, exchange seized collateral, return flashloaned funds, and exchange profit
         if (CToken(cToken).isCEther()) {
             // Decode params
-            (address borrower, uint256 repayAmount, , address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) = abi.decode(data[4:], (address, uint256, address, address, uint256, address, IUniswapV2Router02, IRedemptionStrategy, bytes));
+            (address borrower, uint256 repayAmount, , address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2Router, address[] memory redemptionStrategies, bytes[] memory strategyData) = abi.decode(data[4:], (address, uint256, address, address, uint256, address, IUniswapV2Router02, address[], bytes[]));
 
             // Calculate flashloan return amount
             uint256 flashLoanReturnAmount = repayAmount.mul(1000).div(997);
@@ -343,11 +353,11 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
             // Post WETH flashloan
             // Cache liquidation profit token (or the zero address for ETH) for use as source for exchange later
-            _liquidatorProfitExchangeSource = postFlashLoanWeth(borrower, repayAmount, CEther(cToken), CErc20(cTokenCollateral), minProfitAmount, exchangeProfitTo, flashLoanReturnAmount, uniswapV2Router, redemptionStrategy, strategyData);
+            _liquidatorProfitExchangeSource = postFlashLoanWeth(borrower, repayAmount, CEther(cToken), CErc20(cTokenCollateral), minProfitAmount, exchangeProfitTo, flashLoanReturnAmount, uniswapV2Router, redemptionStrategies, strategyData);
         }
         else {
             // Decode params
-            (address borrower, uint256 repayAmount, , address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) = abi.decode(data[4:], (address, uint256, address, address, uint256, address, IUniswapV2Router02, IUniswapV2Router02, IRedemptionStrategy, bytes));
+            (address borrower, uint256 repayAmount, , address cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, address[] memory redemptionStrategies, bytes[] memory strategyData) = abi.decode(data[4:], (address, uint256, address, address, uint256, address, IUniswapV2Router02, IUniswapV2Router02, address[], bytes[]));
 
             // Calculate flashloan return amount
             uint256 flashLoanReturnAmount = repayAmount.mul(1000).div(997);
@@ -355,7 +365,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
             // Post token flashloan
             // Cache liquidation profit token (or the zero address for ETH) for use as source for exchange later
-            _liquidatorProfitExchangeSource = postFlashLoanTokens(borrower, repayAmount, CErc20(cToken), CToken(cTokenCollateral), minProfitAmount, exchangeProfitTo, flashLoanReturnAmount, uniswapV2RouterForBorrow, uniswapV2RouterForCollateral, redemptionStrategy, strategyData);
+            _liquidatorProfitExchangeSource = postFlashLoanTokens(borrower, repayAmount, CErc20(cToken), CToken(cTokenCollateral), minProfitAmount, exchangeProfitTo, flashLoanReturnAmount, uniswapV2RouterForBorrow, uniswapV2RouterForCollateral, redemptionStrategies, strategyData);
         }
     }
 
@@ -386,7 +396,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     /**
      * @dev Liquidate unhealthy ETH borrow, exchange seized collateral, return flashloaned funds, and exchange profit.
      */
-    function postFlashLoanWeth(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) private returns (address) {
+    function postFlashLoanWeth(address borrower, uint256 repayAmount, CEther cEther, CErc20 cErc20Collateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2Router, address[] memory redemptionStrategies, bytes[] memory strategyData) private returns (address) {
         // Unwrap WETH
         WETH.withdraw(repayAmount);
 
@@ -400,19 +410,22 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
 
         // Repay flashloan
-        return repayWethFlashLoan(repayAmount, cErc20Collateral, exchangeProfitTo, flashLoanReturnAmount, uniswapV2Router, redemptionStrategy, strategyData);
+        return repayWethFlashLoan(repayAmount, cErc20Collateral, exchangeProfitTo, flashLoanReturnAmount, uniswapV2Router, redemptionStrategies, strategyData);
     }
 
     /**
      * @dev Repays WETH flashloans.
      */
-    function repayWethFlashLoan(uint256 repayAmount, CErc20 cErc20Collateral, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2Router, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) private returns (address) {
+    function repayWethFlashLoan(uint256 repayAmount, CErc20 cErc20Collateral, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2Router, address[] memory redemptionStrategies, bytes[] memory strategyData) private returns (address) {
         // Check underlying collateral seized
         IERC20Upgradeable underlyingCollateral = IERC20Upgradeable(cErc20Collateral.underlying());
         uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
 
         // Redeem custom collateral if liquidation strategy is set
-        if (address(redemptionStrategy) != address(0)) (underlyingCollateral, underlyingCollateralSeized) = redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, redemptionStrategy, strategyData);
+        if (redemptionStrategies.length > 0) {
+            require(redemptionStrategies.length == strategyData.length, "IRedemptionStrategy contract array and strategy data bytes array mnust the the same length.");
+            for (uint256 i = 0; i < redemptionStrategies.length; i++) (underlyingCollateral, underlyingCollateralSeized) = redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, IRedemptionStrategy(redemptionStrategies[i]), strategyData[i]);
+        }
 
         // Check side of the flashloan to repay: if input token (underlying collateral) is part of flashloan, repay it (to avoid reentracy error); otherwise, convert to WETH and repay WETH
         if (address(uniswapV2Router) == UNISWAP_V2_ROUTER_02_ADDRESS && address(underlyingCollateral) == (cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)) {
@@ -454,7 +467,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     /**
      * @dev Liquidate unhealthy token borrow, exchange seized collateral, return flashloaned funds, and exchange profit.
      */
-    function postFlashLoanTokens(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData) private returns (address) {
+    function postFlashLoanTokens(address borrower, uint256 repayAmount, CErc20 cErc20, CToken cTokenCollateral, uint256 minProfitAmount, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, address[] memory redemptionStrategies, bytes[] memory strategyData) private returns (address) {
         // Approve repayAmount to cErc20
         IERC20Upgradeable underlyingBorrow = IERC20Upgradeable(cErc20.underlying());
         safeApprove(underlyingBorrow, address(cErc20), repayAmount);
@@ -469,13 +482,13 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         require(redeemResult == 0, "Error calling redeeming seized cToken: error code not equal to 0");
 
         // Repay flashloan
-        return repayTokenFlashLoan(repayAmount, cTokenCollateral, exchangeProfitTo, flashLoanReturnAmount, uniswapV2RouterForBorrow, uniswapV2RouterForCollateral, redemptionStrategy, strategyData, underlyingBorrow);
+        return repayTokenFlashLoan(repayAmount, cTokenCollateral, exchangeProfitTo, flashLoanReturnAmount, uniswapV2RouterForBorrow, uniswapV2RouterForCollateral, redemptionStrategies, strategyData, underlyingBorrow);
     }
 
     /**
      * @dev Repays token flashloans.
      */
-    function repayTokenFlashLoan(uint256 repayAmount, CToken cTokenCollateral, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, IRedemptionStrategy redemptionStrategy, bytes memory strategyData, IERC20Upgradeable underlyingBorrow) private returns (address) {
+    function repayTokenFlashLoan(uint256 repayAmount, CToken cTokenCollateral, address exchangeProfitTo, uint256 flashLoanReturnAmount, IUniswapV2Router02 uniswapV2RouterForBorrow, IUniswapV2Router02 uniswapV2RouterForCollateral, address[] memory redemptionStrategies, bytes[] memory strategyData, IERC20Upgradeable underlyingBorrow) private returns (address) {
         // Swap cTokenCollateral for cErc20 via Uniswap
         if (cTokenCollateral.isCEther()) {
             // Get flashloan repay amount in terms of WETH collateral via Uniswap router
@@ -496,7 +509,10 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             uint256 underlyingCollateralSeized = underlyingCollateral.balanceOf(address(this));
 
             // Redeem custom collateral if liquidation strategy is set
-            if (address(redemptionStrategy) != address(0)) (underlyingCollateral, underlyingCollateralSeized) = redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, redemptionStrategy, strategyData);
+            if (redemptionStrategies.length > 0) {
+                require(redemptionStrategies.length == strategyData.length, "IRedemptionStrategy contract array and strategy data bytes array mnust the the same length.");
+                for (uint256 i = 0; i < redemptionStrategies.length; i++) (underlyingCollateral, underlyingCollateralSeized) = redeemCustomCollateral(underlyingCollateral, underlyingCollateralSeized, IRedemptionStrategy(redemptionStrategies[i]), strategyData[i]);
+            }
 
             // Check which side of the flashloan to repay
             if (address(underlyingCollateral) == address(underlyingBorrow)) {
