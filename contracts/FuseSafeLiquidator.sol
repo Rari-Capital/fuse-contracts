@@ -429,10 +429,8 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
         // Check side of the flashloan to repay: if input token (underlying collateral) is part of flashloan, repay it (to avoid reentracy error); otherwise, convert to WETH and repay WETH
         if (address(uniswapV2Router) == UNISWAP_V2_ROUTER_02_ADDRESS && address(underlyingCollateral) == (cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)) {
-            // Get tokens required to repay flashloan
-            uint256 tokensRequired = getAmountsIn(uniswapV2Router.factory(), repayAmount, array(WETH_ADDRESS, address(underlyingCollateral)))[0];
-
-            // Repay flashloan in non-WETH tokens
+            // Get tokens required to repay flashloan and repay flashloan in non-WETH tokens
+            uint256 tokensRequired = getAmountsIn(uniswapV2Router.factory(), repayAmount, array(address(underlyingCollateral), WETH_ADDRESS))[0];
             require(tokensRequired <= underlyingCollateralSeized, "Flashloan return amount greater than seized collateral.");
             require(underlyingCollateral.transfer(msg.sender, tokensRequired), "Failed to transfer non-WETH tokens back to flashlender.");
         } else {
