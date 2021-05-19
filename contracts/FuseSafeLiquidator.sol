@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
@@ -29,6 +30,7 @@ import "./external/uniswap/UniswapV2Library.sol";
  */
 contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     using SafeMathUpgradeable for uint256;
+    using AddressUpgradeable for address payable;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
@@ -323,20 +325,10 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
     /**
      * @dev Receives ETH from liquidations and flashloans.
-     * Requires that `msg.sender` is WETH, a CToken, or a Uniswap V2 Router.
+     * Requires that `msg.sender` is WETH, a CToken, or a Uniswap V2 Router, or another contract.
      */
     receive() external payable {
-        if (msg.sender != WETH_ADDRESS) {
-            try IUniswapV2Router02(msg.sender).factory() returns (address factory) {
-                require(factory != address(0), "Sender is not WETH, a CToken, or a Uniswap V2 Router.");
-            } catch {
-                try CToken(msg.sender).isCToken() returns (bool isCToken) {
-                    require(isCToken, "Sender is not WETH, a CToken, or a Uniswap V2 Router.");
-                } catch {
-                    revert("Sender is not WETH, a CToken, or a Uniswap V2 Router.");
-                }
-            }
-        }
+        require(msg.sender.isContract(), "Sender is not a contract.");
     }
 
     /**

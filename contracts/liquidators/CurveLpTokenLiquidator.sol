@@ -27,7 +27,7 @@ contract CurveLpTokenLiquidator is IRedemptionStrategy {
         ICurvePool curvePool = ICurvePool(ICurveRegistry(0x7D86446dDb609eD0F5f8684AcF30380a356b2B4c).get_pool_from_lp_token(address(inputToken)));
         (uint8 curveCoinIndex, address underlying) = abi.decode(strategyData, (uint8, address));
         curvePool.remove_liquidity_one_coin(inputAmount, int128(curveCoinIndex), 1);
-        outputToken = IERC20Upgradeable(underlying);
-        outputAmount = outputToken.balanceOf(address(this));
+        outputToken = IERC20Upgradeable(underlying == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE ? address(0) : underlying);
+        outputAmount = address(outputToken) == address(0) ? address(this).balance : outputToken.balanceOf(address(this));
     }
 }
