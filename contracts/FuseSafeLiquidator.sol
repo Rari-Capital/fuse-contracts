@@ -563,7 +563,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
      * @dev Used by `_functionDelegateCall` to verify the result of a delegate call.
      * Copied from https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/cb4774ace1cb84f2662fa47c573780aab937628b/contracts/utils/MulticallUpgradeable.sol#L45
      */
-    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns(bytes memory) {
+    function _verifyCallResult(bool success, bytes memory returndata, string memory errorMessage) private pure returns (bytes memory) {
         if (success) {
             return returndata;
         } else {
