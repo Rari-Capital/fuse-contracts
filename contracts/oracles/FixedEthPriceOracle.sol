@@ -12,7 +12,7 @@ import "./BasePriceOracle.sol";
 
 /**
  * @title FixedEthPriceOracle
- * @notice Returns fixed ETH prices.
+ * @notice Returns fixed ETH prices for all tokens.
  * @dev Implements `PriceOracle` and `BasePriceOracle`.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */

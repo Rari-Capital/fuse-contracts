@@ -34,7 +34,7 @@ contract UniswapTwapPriceOracle is PriceOracle, BasePriceOracle {
     address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /**
-     * @dev UniswapV2Factory contract address.
+     * @dev UniswapTwapPriceOracleRoot contract address.
      */
     UniswapTwapPriceOracleRoot immutable public rootOracle;
 
