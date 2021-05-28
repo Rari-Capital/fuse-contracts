@@ -47,7 +47,7 @@ contract CurveSwapLiquidator is IRedemptionStrategy {
     function redeem(IERC20Upgradeable inputToken, uint256 inputAmount, bytes memory strategyData) external override returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
         // Exchange and store output
         (ICurvePool curvePool, int128 i, int128 j, address jToken) = abi.decode(strategyData, (ICurvePool, int128, int128, address));
-        outputToken = jToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE ? address(0) : jToken;
+        outputToken = IERC20Upgradeable(jToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE ? address(0) : jToken);
         safeApprove(inputToken, address(curvePool), inputAmount);
         outputAmount = curvePool.exchange(i, j, inputAmount, 0);
 

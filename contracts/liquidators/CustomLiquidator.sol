@@ -3,6 +3,8 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
+import "../external/aave/IWETH.sol";
+
 import "./IRedemptionStrategy.sol";
 
 /**
@@ -11,6 +13,11 @@ import "./IRedemptionStrategy.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
 contract CustomLiquidator is IRedemptionStrategy {
+    /**
+     * @dev WETH contract object.
+     */
+    IWETH constant private WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
     /**
      * @notice Redeems custom collateral `token` for an underlying token.
      * @param inputToken The input wrapped token to be redeemed for an underlying token.
