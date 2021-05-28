@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
 import "../external/curve/ICurveRegistry.sol";
 import "../external/curve/ICurvePool.sol";
@@ -11,15 +12,29 @@ import "../external/aave/IWETH.sol";
 import "./IRedemptionStrategy.sol";
 
 /**
- * @title CurveLpTokenLiquidator
- * @notice Redeems seized Curve LP token collateral for underlying tokens for use as a step in a liquidation.
+ * @title CurveSwapLiquidator
+ * @notice Swaps seized token collateral via Curve as a step in a liquidation.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract CurveLpTokenLiquidator is IRedemptionStrategy {
+contract CurveSwapLiquidator is IRedemptionStrategy {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
     /**
      * @dev WETH contract object.
      */
     IWETH constant private WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    /**
+     * @dev Internal function to approve unlimited tokens of `erc20Contract` to `to`.
+     */
+    function safeApprove(IERC20Upgradeable token, address to, uint256 minAmount) private {
+        uint256 allowance = token.allowance(address(this), to);
+
+        if (allowance < minAmount) {
+            if (allowance > 0) token.safeApprove(to, 0);
+            token.safeApprove(to, uint256(-1));
+        }
+    }
 
     /**
      * @notice Redeems custom collateral `token` for an underlying token.
@@ -30,12 +45,11 @@ contract CurveLpTokenLiquidator is IRedemptionStrategy {
      * @return outputAmount The quantity of underlying tokens outputted.
      */
     function redeem(IERC20Upgradeable inputToken, uint256 inputAmount, bytes memory strategyData) external override returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
-        // Remove liquidity from Curve pool in the form of one coin only (and store output as new collateral)
-        ICurvePool curvePool = ICurvePool(ICurveRegistry(0x7D86446dDb609eD0F5f8684AcF30380a356b2B4c).get_pool_from_lp_token(address(inputToken)));
-        (uint8 curveCoinIndex, address underlying) = abi.decode(strategyData, (uint8, address));
-        curvePool.remove_liquidity_one_coin(inputAmount, int128(curveCoinIndex), 1);
-        outputToken = IERC20Upgradeable(underlying == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE ? address(0) : underlying);
-        outputAmount = address(outputToken) == address(0) ? address(this).balance : outputToken.balanceOf(address(this));
+        // Exchange and store output
+        (ICurvePool curvePool, int128 i, int128 j, address jToken) = abi.decode(strategyData, (ICurvePool, int128, int128, address));
+        outputToken = jToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE ? address(0) : jToken;
+        safeApprove(inputToken, address(curvePool), inputAmount);
+        outputAmount = curvePool.exchange(i, j, inputAmount, 0);
 
         // Convert to WETH if ETH because `FuseSafeLiquidator.repayTokenFlashLoan` only supports tokens (not ETH) as output from redemptions (reverts on line 24 because `underlyingCollateral` is the zero address) 
         if (address(outputToken) == address(0)) {

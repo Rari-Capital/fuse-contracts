@@ -28,5 +28,9 @@ contract CEtherLiquidator is IRedemptionStrategy {
         require(redeemResult == 0, "Error calling redeeming seized cEther: error code not equal to 0");
         outputToken = IERC20Upgradeable(address(0));
         outputAmount = address(this).balance;
+
+        // Convert to WETH because `FuseSafeLiquidator.repayTokenFlashLoan` only supports tokens (not ETH) as output from redemptions (reverts on line 24 because `underlyingCollateral` is the zero address) 
+        WETH.deposit{value: outputAmount}();
+        return (IERC20Upgradeable(address(WETH)), outputAmount);
     }
 }

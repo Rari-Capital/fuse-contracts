@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 import "../external/synthetix/ISynthetix.sol";
 import "../external/synthetix/ISynth.sol";
+import "../external/synthetix/Proxy.sol";
 
 import "./IRedemptionStrategy.sol";
 
@@ -30,7 +31,9 @@ contract SynthetixSynthLiquidator is IRedemptionStrategy {
     function redeem(IERC20Upgradeable inputToken, uint256 inputAmount, bytes memory strategyData) external override returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
         // Swap Synth token for other Synth token (and store output as new collateral)
         (outputToken) = abi.decode(strategyData, (IERC20Upgradeable));
-        SYNTHETIX.exchange(ISynth(address(inputToken)).currencyKey(), inputAmount, ISynth(address(outputToken)).currencyKey());
+        address inputSynthLogic = Proxy(address(inputToken)).target(); // For some reason we have to use the logic contract instead of the proxy contract to get `currencyKey`
+        address outputSynthLogic = Proxy(address(outputToken)).target(); // For some reason we have to use the logic contract instead of the proxy contract to get `currencyKey`
+        SYNTHETIX.exchange(ISynth(inputSynthLogic).currencyKey(), inputAmount, ISynth(outputSynthLogic).currencyKey());
         outputAmount = outputToken.balanceOf(address(this));
     }
 }
