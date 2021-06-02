@@ -74,6 +74,30 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 
 **v1.0.0**: `0x1887118E49e0F4A78Bd71B792a49dE03504A764D`
 
+### `CurveLpTokenLiquidator`
+
+`CurveLpTokenLiquidator` redeems seized Curve LP token collateral for underlying tokens for use as a step in a liquidation.
+
+**v1.1.0**: `0xb5eEaeB4E7e0a9feD003ED402016342A09FC2784`
+
+### `CurveLiquidityGaugeV2Liquidator`
+
+`CurveLiquidityGaugeV2Liquidator` redeems seized Curve LiquidityGaugeV2 collateral for underlying tokens for use as a step in a liquidation.
+
+**v1.1.0**: `0x97e6E953C9a9250c8e889D888158F27752e0aFe0`
+
+### `YearnYVaultV2Liquidator`
+
+`YearnYVaultV2Liquidator` redeems seized Yearn yVault V2 collateral for underlying tokens for use as a step in a liquidation.
+
+**v1.1.0**: `0x50293EB96E90616faD66CEF227EDA2b344F592c0`
+
+### `PoolTogetherLiquidator`
+
+`PoolTogetherLiquidator` redeems seized PoolTogether PcTokens for underlying tokens for use as a step in a liquidation.
+
+**v1.1.0**: `0xDDB0d86fDBF33210Ba6EFc97757fFcdBF26B5530`
+
 ## Older Versions
 
 ### `FuseSafeLiquidator`
