@@ -16,7 +16,7 @@ import "./BasePriceOracle.sol";
 /**
  * @title CurveLpTokenPriceOracle
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice CurveLpTokenPriceOracle is a price oracle for Curve LP tokens.
+ * @notice CurveLpTokenPriceOracle is a price oracle for Curve LP tokens (using the sender as a root oracle).
  * @dev Implements the `PriceOracle` interface used by Fuse pools (and Compound v2).
  */
 contract CurveLpTokenPriceOracle is PriceOracle, BasePriceOracle {

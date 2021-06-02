@@ -14,7 +14,7 @@ import "./BasePriceOracle.sol";
 
 /**
  * @title FixedEurPriceOracle
- * @notice Returns fixed prices of 1 EUR in terms of ETH for all tokens.
+ * @notice Returns fixed prices of 1 EUR in terms of ETH for all tokens (expected to be used under a `MasterPriceOracle`).
  * @dev Implements `PriceOracle` and `BasePriceOracle`.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */

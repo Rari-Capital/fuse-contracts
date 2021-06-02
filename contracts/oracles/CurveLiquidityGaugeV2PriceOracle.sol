@@ -15,8 +15,10 @@ import "./BasePriceOracle.sol";
 /**
  * @title CurveLiquidityGaugeV2PriceOracle
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice CurveLpTokenPriceOracle is a price oracle for Curve LiquidityGaugeV2 tokens.
+ * @notice CurveLiquidityGaugeV2PriceOracle is a price oracle for Curve LiquidityGaugeV2 tokens (using the sender as a root oracle).
  * @dev Implements the `PriceOracle` interface used by Fuse pools (and Compound v2).
+ * This contract is expected to be called by a `MasterPriceOracle` with the necessary `CurveLpTokenPriceOracle` configured.
+ * The price of a Curve LiquidityGaugeV2 token is the same as the price of its underlying Curve LP token.
  */
 contract CurveLiquidityGaugeV2PriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
