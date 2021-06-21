@@ -64,6 +64,8 @@ contract FixedEurPriceOracle is PriceOracle, BasePriceOracle {
         address underlying = CErc20(address(cToken)).underlying();
 
         // Format and return price
-        return uint256(1e36).div(10 ** uint256(ERC20Upgradeable(underlying).decimals()));
+        // Comptroller needs prices to be scaled by 1e(36 - decimals)
+        // Since `_price` returns prices scaled by 18 decimals, we must scale them by 1e(36 - 18 - decimals)
+        return _price(underlying).mul(1e18).div(10 ** uint256(ERC20Upgradeable(underlying).decimals()));
     }
 }
