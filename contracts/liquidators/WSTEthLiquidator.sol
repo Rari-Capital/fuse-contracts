@@ -22,7 +22,7 @@ contract WSTEthLiquidator is IRedemptionStrategy {
      * @return outputAmount The quantity of underlying tokens outputted.
      */
     function redeem(IERC20Upgradeable inputToken, uint256 inputAmount, bytes memory strategyData) external override returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
-        // Unstake sOHM (and store output OHM as new collateral)
+        // Unwrap wstETH (and store output stETH as new collateral)
         IWstETH token = IWstETH(address(inputToken));
         token.unwrap(inputAmount);
         outputToken = IERC20Upgradeable(token.stETH());
