@@ -1,0 +1,259 @@
+{
+  "manifestVersion": "3.1",
+  "impls": {
+    "8a3a086cdcdefc1a828fa445ad39e7e8d47baa199724ce80648714416474db4e": {
+      "address": "0xE178524348a6D09dE427cf076a0C3F587592A29A",
+      "txHash": "0x146376173ffaf1a4d40d8208ee359361391462cb621bcd3634444ea3fe4a46fa",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:24"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:29"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\GSN\\ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:20"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:74"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "interestFeeRate",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:38"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "minBorrowEth",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:70"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "maxSupplyEth",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:75"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "maxUtilizationRate",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:80"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    },
+    "f2234faa187e87db56fb82ea7c52038a886245110cb425600d005fc23a0c70a9": {
+      "address": "0xbc81c8fbb73b5825ba6cc7c4de1fe92004cc80c6",
+      "txHash": "0x68b577cd6764b284021d0e2f07273fa22d127a0ccff00a1a9b279bb96dcf8ca9",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:24"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:29"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\GSN\\ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:20"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:74"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "pools",
+            "type": "t_array(t_struct(FusePool)254_storage)dyn_storage",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolDirectory.sol:48"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "_poolsByAccount",
+            "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolDirectory.sol:53"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "poolExists",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolDirectory.sol:58"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "enforceDeployerWhitelist",
+            "type": "t_bool",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolDirectory.sol:68"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "deployerWhitelist",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolDirectory.sol:73"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "_bookmarks",
+            "type": "t_mapping(t_address,t_array(t_address)dyn_storage)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolDirectory.sol:226"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(FusePool)254_storage)dyn_storage": {
+            "label": "struct FusePoolDirectory.FusePool[]"
+          },
+          "t_struct(FusePool)254_storage": {
+            "label": "struct FusePoolDirectory.FusePool",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "creator",
+                "type": "t_address"
+              },
+              {
+                "label": "comptroller",
+                "type": "t_address"
+              },
+              {
+                "label": "blockPosted",
+                "type": "t_uint256"
+              },
+              {
+                "label": "timestampPosted",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+            "label": "mapping(address => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "2dcc850cc94a8ccd08e8889031aeb4e66ed15f4e2d15fd8deb596cf70a38f320": {
+      "address": "0x545D7cEb4F1aF03CaD930C6a6f7634F3406755DC",
+      "txHash": "0x7c4dbc695c3b9eedd3bfdaecd5e56f00ac07763e334d2fbd8bbac0ab587c7cfa",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:24"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:29"
+          },
+          {
+            "contract": "FusePoolLens",
+            "label": "directory",
+            "type": "t_contract(FusePoolDirectory)843",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolLens.sol:43"
+          }
+        ],
+        "types": {
+          "t_contract(FusePoolDirectory)843": {
+            "label": "contract FusePoolDirectory"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    }
+  },
+  "admin": {
+    "address": "0x485DD130c2052770D4aa27DF91049Ee70b613F61",
+    "txHash": "0x27e3fdaf3f18bc755ae151d7925e9456a59f9fe65aee9e6f1ecae024efff2260"
+  }
+}

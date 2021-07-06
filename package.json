@@ -1,6 +1,6 @@
 {
   "name": "fuse-contracts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Smart contracts for Fuse by Rari Capital.",
   "main": "truffle-config.js",
   "directories": {
@@ -20,7 +20,7 @@
     "email": "david@rari.capital",
     "url": "https://github.com/davidlucid"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/Rari-Capital/fuse-contracts/issues"
   },

@@ -1,12 +1,4 @@
-/**
- * COPYRIGHT © 2020 RARI CAPITAL, INC. ALL RIGHTS RESERVED.
- * Anyone is free to integrate the public (i.e., non-administrative) application programming interfaces (APIs) of the official Ethereum smart contract instances deployed by Rari Capital, Inc. in any application (commercial or noncommercial and under any license), provided that the application does not abuse the APIs or act against the interests of Rari Capital, Inc.
- * Anyone is free to study, review, and analyze the source code contained in this package.
- * Reuse (including deployment of smart contracts other than private testing on a private network), modification, redistribution, or sublicensing of any source code contained in this package is not permitted without the explicit permission of David Lucid of Rari Capital, Inc.
- * No one is permitted to use the software for any purpose other than those allowed by this license.
- * This license is liable to change at any time at the sole discretion of David Lucid of Rari Capital, Inc.
- */
-
+// SPDX-License-Identifier: UNLICENSED
 const FuseFeeDistributor = artifacts.require("FuseFeeDistributor");
 const IERC20Upgradeable = artifacts.require("IERC20Upgradeable");
 
@@ -16,7 +8,7 @@ contract("FuseFeeDistributor", accounts => {
     var amount = web3.utils.toBN(1e17);
     await web3.eth.sendTransaction({ from: process.env.DEVELOPMENT_ADDRESS, to: FuseFeeDistributor.address, value: amount, gasPrice: 0 });
     var accountBalanceBeforeWithdrawal = web3.utils.toBN(await web3.eth.getBalance(process.env.DEVELOPMENT_ADDRESS));
-    await feeDistributorInstance.withdrawAssets("0x0000000000000000000000000000000000000000", { from: process.env.DEVELOPMENT_ADDRESS, gasPrice: 0 });
+    await feeDistributorInstance._withdrawAssets("0x0000000000000000000000000000000000000000", { from: process.env.DEVELOPMENT_ADDRESS, gasPrice: 0 });
     var accountBalanceAfterWithdrawal = web3.utils.toBN(await web3.eth.getBalance(process.env.DEVELOPMENT_ADDRESS));
     assert(accountBalanceAfterWithdrawal.gte(accountBalanceBeforeWithdrawal.add(amount)));
   });
@@ -27,7 +19,7 @@ contract("FuseFeeDistributor", accounts => {
     var amount = web3.utils.toBN(1e5);
     await usdcInstance.transfer(FuseFeeDistributor.address, amount, { from: process.env.DEVELOPMENT_ADDRESS });
     var accountBalanceBeforeWithdrawal = await usdcInstance.balanceOf.call(process.env.DEVELOPMENT_ADDRESS);
-    await feeDistributorInstance.withdrawAssets(usdcInstance.address, { from: process.env.DEVELOPMENT_ADDRESS });
+    await feeDistributorInstance._withdrawAssets(usdcInstance.address, { from: process.env.DEVELOPMENT_ADDRESS });
     var accountBalanceAfterWithdrawal = await usdcInstance.balanceOf.call(process.env.DEVELOPMENT_ADDRESS);
     assert(accountBalanceAfterWithdrawal.gte(accountBalanceBeforeWithdrawal.add(amount)));
   });

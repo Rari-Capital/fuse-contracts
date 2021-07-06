@@ -1,12 +1,4 @@
-/**
- * COPYRIGHT © 2020 RARI CAPITAL, INC. ALL RIGHTS RESERVED.
- * Anyone is free to integrate the public (i.e., non-administrative) application programming interfaces (APIs) of the official Ethereum smart contract instances deployed by Rari Capital, Inc. in any application (commercial or noncommercial and under any license), provided that the application does not abuse the APIs or act against the interests of Rari Capital, Inc.
- * Anyone is free to study, review, and analyze the source code contained in this package.
- * Reuse (including deployment of smart contracts other than private testing on a private network), modification, redistribution, or sublicensing of any source code contained in this package is not permitted without the explicit permission of David Lucid of Rari Capital, Inc.
- * No one is permitted to use the software for any purpose other than those allowed by this license.
- * This license is liable to change at any time at the sole discretion of David Lucid of Rari Capital, Inc.
- */
-
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -27,9 +19,10 @@ import "./external/uniswap/IUniswapV2Pair.sol";
 import "./external/uniswap/UniswapV2Library.sol";
 
 /**
- * @title FusePoolDirectory
+ * @title FuseSafeLiquidator
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  * @notice FuseSafeLiquidator safely liquidates unhealthy borrowers (with flashloan support).
+ * @dev Do not transfer ETH or tokens directly to this address. Only send ETH here when using a method, and only approve tokens for transfer to here when using a method. Direct ETH transfers will be rejected and direct token transfers will be lost.
  */
 contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     using SafeMathUpgradeable for uint256;
@@ -58,7 +51,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
         if (from == address(0)) {
             // Exchange from ETH to tokens
-            UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
+            UNISWAP_V2_ROUTER_02.swapExactETHForTokens{value: address(this).balance}(minOutputAmount, array(WETH_ADDRESS, to), address(this), block.timestamp);
         } else {
             // Approve input tokens
             IERC20Upgradeable fromToken = IERC20Upgradeable(from);
@@ -116,7 +109,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     function safeLiquidate(address borrower, CEther cEther, CErc20 cErc20Collateral, uint256 minOutputAmount, address exchangeSeizedTo) external payable {
         // Liquidate ETH borrow
         require(msg.value > 0, "Repay amount (transaction value) must be greater than 0.");
-        cEther.liquidateBorrow.value(msg.value)(borrower, CToken(cErc20Collateral));
+        cEther.liquidateBorrow{value: msg.value}(borrower, CToken(cErc20Collateral));
 
         // Redeem seized cToken collateral if necessary
         if (exchangeSeizedTo != address(cErc20Collateral)) {
@@ -147,7 +140,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
             require(seizedOutputAmount >= minOutputAmount, "Minimum ETH output amount not satisfied.");
 
             if (seizedOutputAmount > 0) {
-                (bool success, ) = msg.sender.call.value(seizedOutputAmount)("");
+                (bool success, ) = msg.sender.call{value: seizedOutputAmount}("");
                 require(success, "Failed to transfer output ETH to msg.sender.");
             }
         } else {
@@ -224,7 +217,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         pair.swap(token0 == WETH_ADDRESS ? repayAmount : 0, token0 != WETH_ADDRESS ? repayAmount : 0, address(this), msg.data);
 
         // Exchange profit if necessary
-        if (exchangeProfitTo != address(0) && exchangeProfitTo != cErc20Collateral.underlying()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens.value(address(this).balance)(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
+        if (exchangeProfitTo != address(0) && exchangeProfitTo != cErc20Collateral.underlying()) UNISWAP_V2_ROUTER_02.swapExactETHForTokens{value: address(this).balance}(minProfitAmount, array(WETH_ADDRESS, exchangeProfitTo), address(this), block.timestamp);
 
         // Transfer profit to msg.sender
         transferSeizedFunds(exchangeProfitTo, minProfitAmount);
@@ -232,8 +225,11 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
     /**
      * @dev Receives ETH from liquidations and flashloans.
+     * Requires that `msg.sender` is a CToken or the Uniswap V2 Router.
      */
-    receive() external payable { }
+    receive() external payable {
+        require(msg.sender == UNISWAP_V2_ROUTER_02_ADDRESS || CToken(msg.sender).isCToken(), "Sender is not a CToken or the Uniswap V2 Router.");
+    }
 
     /**
      * @dev Callback function for Uniswap flashloans.
@@ -270,7 +266,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         WETH.withdraw(repayAmount);
 
         // Liquidate ETH borrow using flashloaned ETH
-        cEther.liquidateBorrow.value(repayAmount)(borrower, CToken(cErc20Collateral));
+        cEther.liquidateBorrow{value: repayAmount}(borrower, CToken(cErc20Collateral));
 
         // Redeem seized cTokens for underlying asset
         uint256 seizedCTokenAmount = cErc20Collateral.balanceOf(address(this));
@@ -291,7 +287,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
         // Repay flashloan
         require(flashLoanReturnAmount <= address(this).balance, "Flashloan return amount greater than ETH exchanged from seized collateral.");
-        WETH.deposit.value(flashLoanReturnAmount)();
+        WETH.deposit{value: flashLoanReturnAmount}();
         require(WETH.transfer(msg.sender, flashLoanReturnAmount), "Failed to transfer WETH back to flashlender.");
     }
 
@@ -320,7 +316,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
 
             // Repay flashloan
             require(wethRequired <= underlyingCollateralSeized, "Seized ETH collateral not enough to repay flashloan.");
-            WETH.deposit.value(wethRequired)();
+            WETH.deposit{value: wethRequired}();
             require(WETH.transfer(msg.sender, wethRequired), "Failed to repay Uniswap flashloan with WETH exchanged from seized collateral.");
         } else {
             // Check underlying collateral seized

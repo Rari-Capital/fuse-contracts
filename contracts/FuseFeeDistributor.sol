@@ -1,12 +1,4 @@
-/**
- * COPYRIGHT © 2020 RARI CAPITAL, INC. ALL RIGHTS RESERVED.
- * Anyone is free to integrate the public (i.e., non-administrative) application programming interfaces (APIs) of the official Ethereum smart contract instances deployed by Rari Capital, Inc. in any application (commercial or noncommercial and under any license), provided that the application does not abuse the APIs or act against the interests of Rari Capital, Inc.
- * Anyone is free to study, review, and analyze the source code contained in this package.
- * Reuse (including deployment of smart contracts other than private testing on a private network), modification, redistribution, or sublicensing of any source code contained in this package is not permitted without the explicit permission of David Lucid of Rari Capital, Inc.
- * No one is permitted to use the software for any purpose other than those allowed by this license.
- * This license is liable to change at any time at the sole discretion of David Lucid of Rari Capital, Inc.
- */
-
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -31,6 +23,8 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         require(_interestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
         __Ownable_init();
         interestFeeRate = _interestFeeRate;
+        maxSupplyEth = uint256(-1);
+        maxUtilizationRate = uint256(-1);
     }
 
     /**
@@ -42,7 +36,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Sets the proportion of Fuse pool interest taken as a protocol fee.
      * @param _interestFeeRate The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
      */
-    function setInterestFeeRate(uint256 _interestFeeRate) external onlyOwner {
+    function _setInterestFeeRate(uint256 _interestFeeRate) external onlyOwner {
         require(_interestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
         interestFeeRate = _interestFeeRate;
     }
@@ -51,11 +45,11 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Withdraws accrued fees on interest.
      * @param erc20Contract The ERC20 token address to withdraw. Set to the zero address to withdraw ETH.
      */
-    function withdrawAssets(address erc20Contract) external {
+    function _withdrawAssets(address erc20Contract) external {
         if (erc20Contract == address(0)) {
             uint256 balance = address(this).balance;
             require(balance > 0, "No balance available to withdraw.");
-            (bool success, ) = owner().call.value(balance)("");
+            (bool success, ) = owner().call{value: balance}("");
             require(success, "Failed to transfer ETH balance to msg.sender.");
         } else {
             IERC20Upgradeable token = IERC20Upgradeable(erc20Contract);
@@ -63,6 +57,33 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
             require(balance > 0, "No token balance available to withdraw.");
             token.safeTransfer(owner(), balance);
         }
+    }
+
+    /**
+     * @dev Minimum borrow balance (in ETH) per user per Fuse pool asset (only checked on new borrows, not redemptions).
+     */
+    uint256 public minBorrowEth;
+
+    /**
+     * @dev Maximum supply balance (in ETH) per user per Fuse pool asset.
+     */
+    uint256 public maxSupplyEth;
+
+    /**
+     * @dev Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
+     */
+    uint256 public maxUtilizationRate;
+
+    /**
+     * @dev Sets the proportion of Fuse pool interest taken as a protocol fee.
+     * @param _minBorrowEth Minimum borrow balance (in ETH) per user per Fuse pool asset (only checked on new borrows, not redemptions).
+     * @param _maxSupplyEth Maximum supply balance (in ETH) per user per Fuse pool asset.
+     * @param _maxUtilizationRate Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
+     */
+    function _setPoolLimits(uint256 _minBorrowEth, uint256 _maxSupplyEth, uint256 _maxUtilizationRate) external onlyOwner {
+        minBorrowEth = _minBorrowEth;
+        maxSupplyEth = _maxSupplyEth;
+        maxUtilizationRate = _maxUtilizationRate;
     }
 
     /**
