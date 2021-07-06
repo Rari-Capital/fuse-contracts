@@ -26,7 +26,7 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 
 `FuseFeeDistributor` controls and receives protocol fees from Fuse pools and relays admin actions to Fuse pools.
 
-**v1.0.0**: `0xa731585ab05fC9f83555cf9Bff8F58ee94e18F85`
+**v1.0.1**: `0xa731585ab05fC9f83555cf9Bff8F58ee94e18F85`
 
 ### `ChainlinkPriceOracle`
 

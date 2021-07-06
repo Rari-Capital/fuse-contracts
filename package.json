@@ -1,6 +1,6 @@
 {
   "name": "fuse-contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Smart contracts for Fuse by Rari Capital.",
   "main": "truffle-config.js",
   "directories": {
@@ -26,10 +26,10 @@
   },
   "homepage": "https://github.com/Rari-Capital/fuse-contracts#readme",
   "devDependencies": {
-    "@openzeppelin/truffle-upgrades": "^1.1.0",
+    "@openzeppelin/truffle-upgrades": "^1.5.0",
     "@truffle/hdwallet-provider": "^1.0.36",
     "dotenv": "^8.2.0",
-    "ganache-core": "^2.11.3-beta.0",
+    "ganache-core": "^2.13.2",
     "truffle": "^5.1.45"
   },
   "dependencies": {

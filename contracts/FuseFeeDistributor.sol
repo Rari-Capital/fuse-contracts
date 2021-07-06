@@ -90,4 +90,24 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Receives ETH fees.
      */
     receive() external payable { }
+
+    /**
+     * @dev Sends data to a contract.
+     * @param targets The contracts to which `data` will be sent.
+     * @param data The data to be sent to each of `targets`.
+     */
+    function _callPool(address[] calldata targets, bytes[] calldata data) external onlyOwner {
+        require(targets.length > 0 && targets.length == data.length, "Array lengths must be equal and greater than 0.");
+        for (uint256 i = 0; i < targets.length; i++) targets[i].call(data[i]);
+    }
+
+    /**
+     * @dev Sends data to a contract.
+     * @param targets The contracts to which `data` will be sent.
+     * @param data The data to be sent to each of `targets`.
+     */
+    function _callPool(address[] calldata targets, bytes calldata data) external onlyOwner {
+        require(targets.length > 0, "No target addresses specified.");
+        for (uint256 i = 0; i < targets.length; i++) targets[i].call(data);
+    }
 }
