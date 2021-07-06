@@ -1,6 +1,6 @@
 {
   "name": "fuse-contracts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Smart contracts for Fuse by Rari Capital.",
   "main": "truffle-config.js",
   "directories": {
