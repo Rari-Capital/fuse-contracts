@@ -1,9 +1,4 @@
-/**
- * COPYRIGHT © 2020 RARI CAPITAL, INC. ALL RIGHTS RESERVED.
- * No one is permitted to use the software for any purpose without the explicit permission of David Lucid of Rari Capital, Inc.
- * This license is liable to change at any time at the sole discretion of David Lucid of Rari Capital, Inc.
- */
-
+// SPDX-License-Identifier: UNLICENSED
 const { deployProxy, admin } = require('@openzeppelin/truffle-upgrades');
 require('dotenv').config();
 
