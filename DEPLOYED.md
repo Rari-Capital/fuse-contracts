@@ -42,6 +42,12 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 
 **v1.0.0** (SushiSwap): `0x08d415f90ccfb971dfbfdd6266f9a7cb1c166fc0`
 
+### `Keep3rV2PriceOracle`
+
+`Keep3rPriceOracle` reads TWAPs from a `Keep3rV2OracleFactory`. (Our factory is deployed at [`0x31e43cEe5433945dBa82C09dFfe8aE29edbb27c3`](https://etherscan.io/address/0x31e43cEe5433945dBa82C09dFfe8aE29edbb27c3).)
+
+**v1.0.2** (Uniswap): `0xd6a8cac634e59c00a3d4163f839d068458e39869`
+
 ### `MasterPriceOracle`
 
 `MasterPriceOracle` maps ERC20 tokens to specific underlying price oracle contracts.
