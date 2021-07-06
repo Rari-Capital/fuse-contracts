@@ -6,6 +6,7 @@ var FusePoolDirectory = artifacts.require("./FusePoolDirectory.sol");
 var FuseSafeLiquidator = artifacts.require("./FuseSafeLiquidator.sol");
 var FuseFeeDistributor = artifacts.require("./FuseFeeDistributor.sol");
 var FusePoolLens = artifacts.require("./FusePoolLens.sol");
+var Keep3rV2PriceOracle = artifacts.require("./oracles/Keep3rV2PriceOracle.sol");
 
 module.exports = async function(deployer, network, accounts) {
   // Validate .env
@@ -19,9 +20,8 @@ module.exports = async function(deployer, network, accounts) {
     if (!process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS) return console.error("UPGRADE_FEE_DISTRIBUTOR_ADDRESS is missing for upgrade");
     if (!process.env.UPGRADE_FUSE_OWNER_ADDRESS) return console.error("UPGRADE_FUSE_OWNER_ADDRESS is missing for upgrade");
 
-    // Upgrade FuseFeeDistributor
-    FuseFeeDistributor.class_defaults.from = process.env.UPGRADE_FUSE_OWNER_ADDRESS;
-    await upgradeProxy(process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS, FuseFeeDistributor, { deployer });
+    // Deploy Keep3rV2PriceOracle
+    await deployProxy(Keep3rV2PriceOracle, { deployer });
   } else {
     // Deploy FusePoolDirectory
     var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
