@@ -12,7 +12,7 @@ import "../external/sushi/SushiBar.sol";
 import "./BasePriceOracle.sol";
 
 /**
- * @title SushiBarriceOracle
+ * @title SushiBarPriceOracle
  * @notice Returns prices for SushiBar (xSUSHI).
  * @dev Implements `PriceOracle` and `BasePriceOracle`.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
