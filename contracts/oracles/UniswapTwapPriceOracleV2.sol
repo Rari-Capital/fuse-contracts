@@ -75,8 +75,7 @@ contract UniswapTwapPriceOracleV2 is PriceOracle, BasePriceOracle {
 
         // Return root oracle ERC20/ETH TWAP
         uint256 twap = rootOracle.price(underlying, baseToken, uniswapV2Factory);
-        uint256 baseTokenBaseUnit = 10 ** uint256(ERC20Upgradeable(baseToken).decimals());
-        return baseToken == address(0) ? twap : twap.mul(BasePriceOracle(msg.sender).price(baseToken)).div(baseTokenBaseUnit);
+        return baseToken == address(WETH) ? twap : twap.mul(BasePriceOracle(msg.sender).price(baseToken)).div(10 ** uint256(ERC20Upgradeable(baseToken).decimals()));
     }
 
     /**
