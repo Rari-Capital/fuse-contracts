@@ -1,6 +1,6 @@
 # Changelog
 
-## `v1.1.2` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+## `v1.1.2` (contracts deployed; all code pushed)
 
 * Created new oracles:
     * `UniswapTwapPriceOracleV2`
@@ -17,11 +17,11 @@
     * `UniswapV3Liquidator`
 * Improvements to `CustomLiquidator`.
 
-## `v1.1.1` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+## `v1.1.1` (contracts deployed; all code pushed)
 
 * Created `UniswapV3TwapPriceOracle`.
 
-## `v1.1.0` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+## `v1.1.0` (contracts deployed; all code pushed)
 
 * Created new oracles:
     * `CurveLpTokenPriceOracle`
@@ -36,11 +36,11 @@
     * `YearnYVaultV2Liquidator`
     * `PoolTogetherLiquidator`
 
-## `v1.0.5` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+## `v1.0.5` (contracts deployed; all code pushed)
 
 * Created `ChainlinkPriceOracleV2`.
 
-## `v1.0.4` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+## `v1.0.4` (contracts deployed; all code pushed)
 
 * Fixed bug in `FuseSafeLiquidator`.
 
