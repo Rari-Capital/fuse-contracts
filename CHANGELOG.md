@@ -1,5 +1,49 @@
 # Changelog
 
+## `v1.1.2` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+
+* Created new oracles:
+    * `UniswapTwapPriceOracleV2`
+    * `UniswapV3TwapPriceOracleV2`
+    * `FixedTokenPriceOracle`
+    * `SushiBarPriceOracle`
+    * `WSTEthPriceOracle`
+* Created new liquidator collateral redemption strategies:
+    * `SOhmLiquidator`
+    * `SushiBarLiquidator`
+    * `WSTEthLiquidator`
+    * `UniswapV1Liquidator`
+    * `UniswapV2Liquidator`
+    * `UniswapV3Liquidator`
+* Improvements to `CustomLiquidator`.
+
+## `v1.1.1` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+
+* Created `UniswapV3TwapPriceOracle`.
+
+## `v1.1.0` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+
+* Created new oracles:
+    * `CurveLpTokenPriceOracle`
+    * `CurveLiquidityGaugeV2PriceOracle`
+    * `YearnYVaultV1PriceOracle`
+    * `YearnYVaultV2PriceOracle`
+    * `FixedEthPriceOracle`
+    * `FixedEurPriceOracle`
+* Created new liquidator collateral redemption strategies:
+    * `CurveLpTokenLiquidator`
+    * `CurveLiquidityGaugeV2Liquidator`
+    * `YearnYVaultV2Liquidator`
+    * `PoolTogetherLiquidator`
+
+## `v1.0.5` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+
+* Created `ChainlinkPriceOracleV2`.
+
+## `v1.0.4` (contracts deployed 2021-XX-XX; all code pushed 2021-XX-XX)
+
+* Fixed bug in `FuseSafeLiquidator`.
+
 ## `v1.0.3` (contracts deployed 2021-04-06; all code pushed 2021-04-17)
 
 * Created `UniswapTwapPriceOracle`.
