@@ -53,7 +53,8 @@ contract FixedEurPriceOracle is PriceOracle, BasePriceOracle {
         if (ethUsdPrice <= 0) return 0;
 
         // Get EUR/USD price from Chainlink
-        (, int256 eurUsdPrice, , uint256 updatedAt, ) = EUR_USD_PRICE_FEED.latestRoundData();
+        int256 eurUsdPrice;
+        (, eurUsdPrice, , updatedAt, ) = EUR_USD_PRICE_FEED.latestRoundData();
         if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "EUR/USD Chainlink price is stale.");
         if (eurUsdPrice <= 0) return 0;
 
