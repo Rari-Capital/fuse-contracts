@@ -10,6 +10,8 @@ import "../external/compound/CErc20.sol";
 import "../external/chainlink/AggregatorV3Interface.sol";
 
 import "../external/badger/IXToken.sol";
+import "../external/badger/IDigg.sol";
+import "../external/badger/DiggSett.sol";
 
 import "./BasePriceOracle.sol";
 
@@ -40,7 +42,7 @@ contract BadgerPriceOracle is PriceOracle, BasePriceOracle {
     /**
      * @dev bDIGG ERC20 token contract.
      */
-    IXToken constant public BDIGG = IXToken(0x7e7E112A68d8D2E221E11047a72fFC1065c38e1a);
+    DiggSett constant public BDIGG = DiggSett(0x7e7E112A68d8D2E221E11047a72fFC1065c38e1a);
 
     /**
      * @dev BTC/ETH Chainlink price feed.
@@ -83,7 +85,8 @@ contract BadgerPriceOracle is PriceOracle, BasePriceOracle {
         } else if (token == address(BDIGG)) {
             (, int256 diggBtcPrice, , , ) = DIGG_BTC_FEED.latestRoundData();
             (, int256 btcEthPrice, , , ) = BTC_ETH_FEED.latestRoundData();
-            return diggBtcPrice >= 0 && btcEthPrice >= 0 ? uint256(diggBtcPrice).mul(uint256(btcEthPrice)).div(1e8).mul(BDIGG.getPricePerFullShare()).div(1e18) : 0;
+            uint256 bDiggDiggPrice = IDigg(BDIGG.token()).sharesToFragments(BDIGG.shares().div(BDIGG.totalSupply()).mul(1e18));
+            return diggBtcPrice >= 0 && btcEthPrice >= 0 ? uint256(diggBtcPrice).mul(uint256(btcEthPrice)).div(1e8).mul(bDiggDiggPrice).div(1e9) : 0;
         } else if (token == address(IBBTC)) {
             (, int256 btcEthPrice, , , ) = BTC_ETH_FEED.latestRoundData();
             return btcEthPrice >= 0 ? uint256(btcEthPrice).mul(IBBTC.pricePerShare()).div(1e18) : 0;
