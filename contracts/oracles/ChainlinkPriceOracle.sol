@@ -175,7 +175,7 @@ contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
         if (address(ethPriceFeeds[underlying]) != address(0)) {
             (, int256 tokenEthPrice, , uint256 updatedAt, ) = ethPriceFeeds[underlying].latestRoundData();
             if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "Token/ETH Chainlink price is stale.");
-            return tokenEthPrice >= 0 ? uint256(tokenEthPrice).mul(1e18).div(10 ** ethPriceFeeds[underlying].decimals()) : 0;
+            return tokenEthPrice >= 0 ? uint256(tokenEthPrice).mul(1e18).div(10 ** uint256(ethPriceFeeds[underlying].decimals())) : 0;
         } else if (address(usdPriceFeeds[underlying]) != address(0)) {
             (, int256 ethUsdPrice, , uint256 updatedAt, ) = ETH_USD_PRICE_FEED.latestRoundData();
             if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "ETH/USD Chainlink price is stale.");
@@ -183,7 +183,7 @@ contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
             int256 tokenUsdPrice;
             (, tokenUsdPrice, , updatedAt, ) = usdPriceFeeds[underlying].latestRoundData();
             if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "Token/USD Chainlink price is stale.");
-            return tokenUsdPrice >= 0 ? uint256(tokenUsdPrice).mul(1e26).div(10 ** usdPriceFeeds[underlying].decimals()).div(uint256(ethUsdPrice)) : 0;
+            return tokenUsdPrice >= 0 ? uint256(tokenUsdPrice).mul(1e26).div(10 ** uint256(usdPriceFeeds[underlying].decimals())).div(uint256(ethUsdPrice)) : 0;
         } else if (address(btcPriceFeeds[underlying]) != address(0)) {
             (, int256 btcEthPrice, , uint256 updatedAt, ) = BTC_ETH_PRICE_FEED.latestRoundData();
             if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "BTC/ETH Chainlink price is stale.");
@@ -191,7 +191,7 @@ contract ChainlinkPriceOracle is PriceOracle, BasePriceOracle {
             int256 tokenBtcPrice;
             (, tokenBtcPrice, , updatedAt, ) = btcPriceFeeds[underlying].latestRoundData();
             if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "Token/BTC Chainlink price is stale.");
-            return tokenBtcPrice >= 0 ? uint256(tokenBtcPrice).mul(uint256(btcEthPrice)).div(10 ** btcPriceFeeds[underlying].decimals()) : 0;
+            return tokenBtcPrice >= 0 ? uint256(tokenBtcPrice).mul(uint256(btcEthPrice)).div(10 ** uint256(btcPriceFeeds[underlying].decimals())) : 0;
         } else revert("No Chainlink price feed found for this underlying ERC20 token.");
     }
 
