@@ -546,7 +546,12 @@ contract FusePoolLens is Initializable {
             (bool isListed, ) = comptroller.markets(address(cToken));
             if (!isListed) continue;
             
-            address cTokenAdmin = cToken.admin();
+            address cTokenAdmin;
+            try cToken.admin() returns (address _cTokenAdmin) {
+                cTokenAdmin = _cTokenAdmin;
+            } catch {
+                continue;
+            }
             bool cTokenAdminHasRights = cToken.adminHasRights();
             bool cTokenFuseAdminHasRights = cToken.fuseAdminHasRights();
 
@@ -563,14 +568,20 @@ contract FusePoolLens is Initializable {
             (bool isListed, ) = comptroller.markets(address(cToken));
             if (!isListed) continue;
             
-            address cTokenAdmin = cToken.admin();
+            address cTokenAdmin;
+            try cToken.admin() returns (address _cTokenAdmin) {
+                cTokenAdmin = _cTokenAdmin;
+            } catch {
+                continue;
+            }
             bool cTokenAdminHasRights = cToken.adminHasRights();
             bool cTokenFuseAdminHasRights = cToken.fuseAdminHasRights();
 
             // If outlier, push to array and increment array index
-            if (cTokenAdmin != comptrollerAdmin || cTokenAdminHasRights != comptrollerAdminHasRights || cTokenFuseAdminHasRights != comptrollerFuseAdminHasRights)
+            if (cTokenAdmin != comptrollerAdmin || cTokenAdminHasRights != comptrollerAdminHasRights || cTokenFuseAdminHasRights != comptrollerFuseAdminHasRights) {
                 outliers[arrayIndex] = CTokenOwnership(address(cToken), cTokenAdmin, cTokenAdminHasRights, cTokenFuseAdminHasRights);
-            arrayIndex++;
+                arrayIndex++;
+            }
         }
         
         return (comptrollerAdmin, comptrollerAdminHasRights, comptrollerFuseAdminHasRights, outliers);
