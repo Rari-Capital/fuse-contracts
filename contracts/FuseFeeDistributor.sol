@@ -244,17 +244,19 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     /**
      * @dev Latest CErc20Delegate implementation for each existing implementation.
      */
-    function latestCErc20Delegate(address oldImplementation) external view returns (CDelegateUpgradeData memory) {
+    function latestCErc20Delegate(address oldImplementation) external view returns (address, bool, bytes memory) {
+        CDelegateUpgradeData memory data = _latestCErc20Delegate[oldImplementation];
         bytes memory emptyBytes;
-        return _latestCErc20Delegate[oldImplementation].implementation != address(0) ? _latestCErc20Delegate[oldImplementation] : CDelegateUpgradeData(oldImplementation, false, emptyBytes);
+        return data.implementation != address(0) ? (data.implementation, data.allowResign, data.becomeImplementationData) : (oldImplementation, false, emptyBytes);
     }
 
     /**
      * @dev Latest CEtherDelegate implementation for each existing implementation.
      */
-    function latestCEtherDelegate(address oldImplementation) external view returns (CDelegateUpgradeData memory) {
+    function latestCEtherDelegate(address oldImplementation) external view returns (address, bool, bytes memory) {
+        CDelegateUpgradeData memory data = _latestCEtherDelegate[oldImplementation];
         bytes memory emptyBytes;
-        return _latestCEtherDelegate[oldImplementation].implementation != address(0) ? _latestCEtherDelegate[oldImplementation] : CDelegateUpgradeData(oldImplementation, false, emptyBytes);
+        return data.implementation != address(0) ? (data.implementation, data.allowResign, data.becomeImplementationData) : (oldImplementation, false, emptyBytes);
     }
 
     /**
@@ -264,7 +266,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @param allowResign Whether or not `resignImplementation` should be called on the old implementation before upgrade.
      * @param becomeImplementationData Data passed to the new implementation via `becomeImplementation` after upgrade.
      */
-    function _setLatestCEtherDelegateImplementation(address oldImplementation, address newImplementation, bool allowResign, bytes calldata becomeImplementationData) external onlyOwner {
+    function _setLatestCEtherDelegate(address oldImplementation, address newImplementation, bool allowResign, bytes calldata becomeImplementationData) external onlyOwner {
         _latestCEtherDelegate[oldImplementation] = CDelegateUpgradeData(newImplementation, allowResign, becomeImplementationData);
     }
 
@@ -275,7 +277,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @param allowResign Whether or not `resignImplementation` should be called on the old implementation before upgrade.
      * @param becomeImplementationData Data passed to the new implementation via `becomeImplementation` after upgrade.
      */
-    function _setLatestCErc20DelegateImplementation(address oldImplementation, address newImplementation, bool allowResign, bytes calldata becomeImplementationData) external onlyOwner {
+    function _setLatestCErc20Delegate(address oldImplementation, address newImplementation, bool allowResign, bytes calldata becomeImplementationData) external onlyOwner {
         _latestCErc20Delegate[oldImplementation] = CDelegateUpgradeData(newImplementation, allowResign, becomeImplementationData);
     }
 }
