@@ -125,6 +125,9 @@ contract FusePoolDirectory is OwnableUpgradeable {
 
         assembly {
             proxy := create2(0, add(unitrollerCreationCode, 32), mload(unitrollerCreationCode), salt)
+            if iszero(extcodesize(proxy)) {
+                revert(0, "Failed to deploy Unitroller.")
+            }
         }
 
         // Setup Unitroller
@@ -135,13 +138,16 @@ contract FusePoolDirectory is OwnableUpgradeable {
         Comptroller comptrollerProxy = Comptroller(proxy);
 
         // Set pool parameters
-        comptrollerProxy._setCloseFactor(closeFactor);
-        comptrollerProxy._setMaxAssets(maxAssets);
-        comptrollerProxy._setLiquidationIncentive(liquidationIncentive);
-        comptrollerProxy._setPriceOracle(PriceOracle(priceOracle));
+        require(comptrollerProxy._setCloseFactor(closeFactor) == 0, "Failed to set pool close factor.");
+        require(comptrollerProxy._setMaxAssets(maxAssets) == 0, "Failed to set pool max assets.");
+        require(comptrollerProxy._setLiquidationIncentive(liquidationIncentive) == 0, "Failed to set pool liquidation incentive.");
+        require(comptrollerProxy._setPriceOracle(PriceOracle(priceOracle)) == 0, "Failed to set pool price oracle.");
 
         // Whitelist
         if (enforceWhitelist) require(comptrollerProxy._setWhitelistEnforcement(true) == 0, "Failed to enforce supplier/borrower whitelist.");
+
+        // Enable auto-implementation
+        require(comptrollerProxy._toggleAutoImplementations(true) == 0, "Failed to enable pool auto implementations.");
 
         // Make msg.sender the admin
         require(unitroller._setPendingAdmin(msg.sender) == 0, "Failed to set pending admin on Unitroller.");
