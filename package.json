@@ -7,9 +7,11 @@
     "test": "test"
   },
   "scripts": {
-    "compile": "truffle compile --all",
+    "compile:truffle": "truffle compile --all",
+    "compile": "hardhat compile",
     "ganache": "node scripts/ganache.js",
-    "test": "sh scripts/test.sh"
+    "test:truffle": "sh scripts/test.sh",
+    "test": "hardhat test"
   },
   "repository": {
     "type": "git",
@@ -26,13 +28,30 @@
   },
   "homepage": "https://github.com/Rari-Capital/fuse-contracts#readme",
   "devDependencies": {
+    "@ethersproject/abi": "^5.0.0-beta.153",
+    "@ethersproject/abstract-signer": "^5.4.1",
+    "@ethersproject/bignumber": "^5.4.1",
+    "@ethersproject/bytes": "^5.4.0",
+    "@ethersproject/providers": "^5.4.3",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/hardhat-upgrades": "^1.9.0",
     "@openzeppelin/truffle-upgrades": "^1.5.0",
     "@truffle/hdwallet-provider": "^1.2.6",
     "@uniswap/v3-core": "^1.0.0",
     "@uniswap/v3-periphery": "github:Uniswap/uniswap-v3-periphery#pull/96/head",
-    "dotenv": "^8.2.0",
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.4.11",
+    "chai": "^4.3.4",
+    "dotenv": "^8.6.0",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.3",
     "ganache-core": "^2.13.2",
-    "truffle": "^5.3.0"
+    "hardhat": "^2.5.0",
+    "truffle": "^5.3.0",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5"
   },
   "dependencies": {
     "@openzeppelin/contracts-upgradeable": "^3.4.0"
