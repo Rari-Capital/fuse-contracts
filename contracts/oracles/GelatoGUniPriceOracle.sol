@@ -71,14 +71,22 @@ contract GelatoGUniPriceOracle is PriceOracle {
         uint256 to18Dec1 = 10 ** (18 - dec1);
         
         // Get square root of underlying token prices
-        uint160 sqrtPriceX96 = toUint160(sqrt(p1.div(to18Dec0).mul(1 << 136).div(p0.div(to18Dec1))) << 28);
+        // token1/token0 
+        // = (p0 / 10^dec0) / (p1 / 10^dec1) 
+        // = (p0 * 10^dec1) / (p1 * 10^dec0)
+        // [From Uniswap's definition] sqrtPriceX96
+        // = sqrt(token1/token0) * 2^96
+        // = sqrt((p0 * 10^dec1) / (p1 * 10^dec0)) * 2^96
+        // = sqrt((p0 * 10^dec1) / (p1 * 10^dec0)) * 2^48 * 2^48
+        // = sqrt((p0 * 10^dec1 * 2^96) / (p1 * 10^dec0)) * 2^48
+        uint160 sqrtPriceX96 = toUint160(sqrt(p0.mul(10 ** dec1).mul(1 << 96).div(p1.mul(10 ** dec0))) << 48);
 
         // Get balances of the tokens in the pool given fair underlying token prices
-        (uint256 b0, uint256 b1) = pool.getUnderlyingBalancesAtPrice(sqrtPriceX96);
-        require(b0 > 0 || b1 > 0, "G-UNI underlying token balances not both greater than 0.");
+        (uint256 r0, uint256 r1) = pool.getUnderlyingBalancesAtPrice(sqrtPriceX96);
+        require(r0 > 0 || r1 > 0, "G-UNI underlying token balances not both greater than 0.");
 
         // Add the total value of each token together and divide by the totalSupply to get the unit price
-        return p0.mul(b0.mul(to18Dec0)).add(p1.mul(b1.mul(to18Dec1))).div(ERC20Upgradeable(token).totalSupply());
+        return p0.mul(r0.mul(to18Dec0)).add(p1.mul(r1.mul(to18Dec1))).div(ERC20Upgradeable(token).totalSupply());
     }
 
     /**
