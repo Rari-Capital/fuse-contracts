@@ -25,7 +25,7 @@ contract ChainlinkPriceOracleV3 is PriceOracle, BasePriceOracle {
     /**
      * @dev Official Chainlink feed registry contract.
      */
-    FeedRegistryInterface feedRegistry;
+    FeedRegistryInterface feedRegistry = FeedRegistryInterface(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
 
     /**
      * @dev Internal function returning the price in ETH of `underlying`.
@@ -35,29 +35,36 @@ contract ChainlinkPriceOracleV3 is PriceOracle, BasePriceOracle {
         if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
 
         // Try token/ETH to get token/ETH
-        try feedRegistry.getFeed(underlying, Denominations.ETH) returns (AggregatorV2V3Interface feed) {
-            (, int256 tokenEthPrice, , , ) = feed.latestRoundData();
-            return tokenEthPrice >= 0 ? uint256(tokenEthPrice).mul(1e18).div(10 ** uint256(feed.decimals())) : 0;
+        try feedRegistry.latestRoundData(underlying, Denominations.ETH) returns (uint80 roundId, int256 tokenEthPrice, uint256, uint256, uint80 answeredInRound) {
+            require(answeredInRound == roundId, "Chainlink round timed out.");
+            if (tokenEthPrice <= 0) return 0;
+            return uint256(tokenEthPrice).mul(1e18).div(10 ** uint256(feedRegistry.decimals(underlying, Denominations.ETH)));
         } catch Error(string memory reason) {
             require(keccak256(abi.encodePacked(reason)) == keccak256(abi.encodePacked("Feed not found")), "Attempt to get ETH-based feed failed for unexpected reason.");
         }
 
         // Try token/USD to get token/ETH
-        try feedRegistry.getFeed(underlying, Denominations.USD) returns (AggregatorV2V3Interface feed) {
-            (, int256 ethUsdPrice, , , ) = feedRegistry.latestRoundData(Denominations.ETH, Denominations.USD);
+        try feedRegistry.latestRoundData(underlying, Denominations.USD) returns (uint80 roundId, int256 tokenUsdPrice, uint256, uint256, uint80 answeredInRound) {
+            require(answeredInRound == roundId, "Chainlink round timed out.");
+            if (tokenUsdPrice <= 0) return 0;
+            int256 ethUsdPrice;
+            (roundId, ethUsdPrice, , , answeredInRound) = feedRegistry.latestRoundData(Denominations.ETH, Denominations.USD);
+            require(answeredInRound == roundId, "Chainlink round timed out.");
             if (ethUsdPrice <= 0) return 0;
-            (, int256 tokenUsdPrice, , , ) = feed.latestRoundData();
-            return tokenUsdPrice >= 0 ? uint256(tokenUsdPrice).mul(1e26).div(10 ** uint256(feed.decimals())).div(uint256(ethUsdPrice)) : 0;
+            return uint256(tokenUsdPrice).mul(1e26).div(10 ** uint256(feedRegistry.decimals(underlying, Denominations.USD))).div(uint256(ethUsdPrice));
         } catch Error(string memory reason) {
             require(keccak256(abi.encodePacked(reason)) == keccak256(abi.encodePacked("Feed not found")), "Attempt to get USD-based feed failed for unexpected reason.");
         }
 
         // Try token/BTC to get token/ETH
-        try feedRegistry.getFeed(underlying, Denominations.BTC) returns (AggregatorV2V3Interface feed) {
-            (, int256 btcEthPrice, , , ) = feedRegistry.latestRoundData(Denominations.BTC, Denominations.ETH);
+        try feedRegistry.latestRoundData(underlying, Denominations.BTC) returns (uint80 roundId, int256 tokenBtcPrice, uint256, uint256, uint80 answeredInRound) {
+            require(answeredInRound == roundId, "Chainlink round timed out.");
+            if (tokenBtcPrice <= 0) return 0;
+            int256 btcEthPrice;
+            (roundId, btcEthPrice, , , answeredInRound) = feedRegistry.latestRoundData(Denominations.BTC, Denominations.ETH);
+            require(answeredInRound == roundId, "Chainlink round timed out.");
             if (btcEthPrice <= 0) return 0;
-            (, int256 tokenBtcPrice, , , ) = feed.latestRoundData();
-            return tokenBtcPrice >= 0 ? uint256(tokenBtcPrice).mul(uint256(btcEthPrice)).div(10 ** uint256(feed.decimals())) : 0;
+            return uint256(tokenBtcPrice).mul(uint256(btcEthPrice)).div(10 ** uint256(feedRegistry.decimals(underlying, Denominations.BTC)));
         } catch Error(string memory reason) {
             require(keccak256(abi.encodePacked(reason)) == keccak256(abi.encodePacked("Feed not found")), "Attempt to get BTC-based feed failed for unexpected reason.");
         }
