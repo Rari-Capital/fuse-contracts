@@ -36,4 +36,6 @@ interface Comptroller {
 
     function _setWhitelistEnforcement(bool enforce) external returns (uint);
     function _setWhitelistStatuses(address[] calldata _suppliers, bool[] calldata statuses) external returns (uint);
+
+    function _toggleAutoImplementations(bool enabled) external returns (uint);
 }
