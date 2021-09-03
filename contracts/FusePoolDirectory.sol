@@ -108,12 +108,11 @@ contract FusePoolDirectory is OwnableUpgradeable {
      * @param implementation The Comptroller implementation contract address.
      * @param enforceWhitelist Boolean indicating if the pool's supplier/borrower whitelist is to be enforced.
      * @param closeFactor The pool's close factor (scaled by 1e18).
-     * @param maxAssets Maximum number of assets in the pool.
      * @param liquidationIncentive The pool's liquidation incentive (scaled by 1e18).
      * @param priceOracle The pool's PriceOracle contract address.
      * @return The index of the registered Fuse pool and the Unitroller proxy address.
      */
-    function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 maxAssets, uint256 liquidationIncentive, address priceOracle) external returns (uint256, address) {
+    function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 liquidationIncentive, address priceOracle) external returns (uint256, address) {
         // Input validation
         require(implementation != address(0), "No Comptroller implementation contract address specified.");
         require(priceOracle != address(0), "No PriceOracle contract address specified.");
@@ -139,7 +138,6 @@ contract FusePoolDirectory is OwnableUpgradeable {
 
         // Set pool parameters
         require(comptrollerProxy._setCloseFactor(closeFactor) == 0, "Failed to set pool close factor.");
-        require(comptrollerProxy._setMaxAssets(maxAssets) == 0, "Failed to set pool max assets.");
         require(comptrollerProxy._setLiquidationIncentive(liquidationIncentive) == 0, "Failed to set pool liquidation incentive.");
         require(comptrollerProxy._setPriceOracle(PriceOracle(priceOracle)) == 0, "Failed to set pool price oracle.");
 

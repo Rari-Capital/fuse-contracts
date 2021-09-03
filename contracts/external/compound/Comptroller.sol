@@ -25,7 +25,6 @@ interface Comptroller {
     
     function _setPriceOracle(PriceOracle newOracle) external returns (uint);
     function _setCloseFactor(uint newCloseFactorMantissa) external returns (uint256);
-    function _setMaxAssets(uint newMaxAssets) external returns (uint);
     function _setLiquidationIncentive(uint newLiquidationIncentiveMantissa) external returns (uint);
     function _become(Unitroller unitroller) external;
 
