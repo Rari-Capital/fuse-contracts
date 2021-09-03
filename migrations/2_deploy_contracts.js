@@ -15,8 +15,15 @@ module.exports = async function(deployer, network, accounts) {
   }
 
   if (parseInt(process.env.UPGRADE_FROM_LAST_VERSION) > 0) {
-    // Upgrade from v1.0.5 (only modifying FuseSafeLiquidator v1.0.4) to v1.1.0
-    await deployer.deploy(FuseSafeLiquidator);
+    // Upgrade from v1.0.0 (only modifying FuseFeeDistributor v1.0.0) to v1.1.0
+    if (!process.env.UPGRADE_POOL_DIRECTORY_ADDRESS) return console.error("UPGRADE_POOL_DIRECTORY_ADDRESS is missing for upgrade");
+    if (!process.env.UPGRADE_POOL_LENS_ADDRESS) return console.error("UPGRADE_POOL_LENS_ADDRESS is missing for upgrade");
+    if (!process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS) return console.error("UPGRADE_FEE_DISTRIBUTOR_ADDRESS is missing for upgrade");
+
+    // Upgrade to v1.2.0
+    var fusePoolDirectory = await upgradeProxy(process.env.UPGRADE_POOL_DIRECTORY_ADDRESS, FusePoolDirectory, { deployer });
+    var fusePoolLens = await upgradeProxy(process.env.UPGRADE_POOL_LENS_ADDRESS, FusePoolLens, { deployer });
+    var fuseFeeDistributor = await upgradeProxy(process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS, FuseFeeDistributor, { deployer });
   } else {
     // Deploy FusePoolDirectory
     var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
