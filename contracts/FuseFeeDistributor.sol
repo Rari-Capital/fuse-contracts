@@ -18,13 +18,13 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
-     * @dev Initializer that sets the proportion of Fuse pool interest taken as a protocol fee.
-     * @param _interestFeeRate The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
+     * @dev Initializer that sets initial values of state variables.
+     * @param _defaultInterestFeeRate The default proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
      */
-    function initialize(uint256 _interestFeeRate) public initializer {
-        require(_interestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
+    function initialize(uint256 _defaultInterestFeeRate) public initializer {
+        require(_defaultInterestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
         __Ownable_init();
-        interestFeeRate = _interestFeeRate;
+        defaultInterestFeeRate = _defaultInterestFeeRate;
         maxSupplyEth = uint256(-1);
         maxUtilizationRate = uint256(-1);
         comptrollerImplementationWhitelist[address(0)][0x94B2200d28932679DEF4A7d08596A229553a994E] = true;
@@ -37,15 +37,15 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     /**
      * @notice The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
      */
-    uint256 public interestFeeRate;
+    uint256 public defaultInterestFeeRate;
 
     /**
-     * @dev Sets the proportion of Fuse pool interest taken as a protocol fee.
-     * @param _interestFeeRate The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
+     * @dev Sets the default proportion of Fuse pool interest taken as a protocol fee.
+     * @param _defaultInterestFeeRate The default proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
      */
-    function _setInterestFeeRate(uint256 _interestFeeRate) external onlyOwner {
-        require(_interestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
-        interestFeeRate = _interestFeeRate;
+    function _setDefaultInterestFeeRate(uint256 _defaultInterestFeeRate) external onlyOwner {
+        require(_defaultInterestFeeRate <= 1e18, "Interest fee rate cannot be more than 100%.");
+        defaultInterestFeeRate = _defaultInterestFeeRate;
     }
 
     /**
@@ -73,11 +73,13 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
 
     /**
      * @dev Maximum supply balance (in ETH) per user per Fuse pool asset.
+     * No longer used as of `Rari-Capital/compound-protocol` version `fuse-v1.1.0`.
      */
     uint256 public maxSupplyEth;
 
     /**
      * @dev Maximum utilization rate (scaled by 1e18) for Fuse pool assets (only checked on new borrows, not redemptions).
+     * No longer used as of `Rari-Capital/compound-protocol` version `fuse-v1.1.0`.
      */
     uint256 public maxUtilizationRate;
 
@@ -285,5 +287,37 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      */
     function _setLatestCErc20Delegate(address oldImplementation, address newImplementation, bool allowResign, bytes calldata becomeImplementationData) external onlyOwner {
         _latestCErc20Delegate[oldImplementation] = CDelegateUpgradeData(newImplementation, allowResign, becomeImplementationData);
+    }
+
+    /**
+     * @notice Maps Unitroller (Comptroller proxy) addresses to the proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
+     * @dev A value of 0 means unset whereas a negative value means 0.
+     */
+    mapping(address => int256) public customInterestFeeRates;
+
+    /**
+     * @notice Returns the proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
+     */
+    function interestFeeRate() external view returns (uint256) {
+        (bool success, bytes memory data) = msg.sender.staticcall(abi.encodeWithSignature("comptroller()"));
+
+        if (success && data.length == 32) {
+            (address comptroller) = abi.decode(data, (address));
+            int256 customRate = customInterestFeeRates[comptroller];
+            if (customRate > 0) return uint256(customRate);
+            if (customRate < 0) return 0;
+        }
+
+        return defaultInterestFeeRate;
+    }
+
+    /**
+     * @dev Sets the proportion of Fuse pool interest taken as a protocol fee.
+     * @param comptroller The Unitroller (Comptroller proxy) address.
+     * @param rate The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
+     */
+    function _setCustomInterestFeeRate(address comptroller, int256 rate) external onlyOwner {
+        require(rate <= 1e18, "Interest fee rate cannot be more than 100%.");
+        customInterestFeeRates[comptroller] = rate;
     }
 }
