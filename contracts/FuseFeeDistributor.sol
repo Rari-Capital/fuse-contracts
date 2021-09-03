@@ -27,11 +27,6 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         defaultInterestFeeRate = _defaultInterestFeeRate;
         maxSupplyEth = uint256(-1);
         maxUtilizationRate = uint256(-1);
-        comptrollerImplementationWhitelist[address(0)][0x94B2200d28932679DEF4A7d08596A229553a994E] = true;
-        comptrollerImplementationWhitelist[address(0)][0x8A78A9D35c9C61F9E0Ff526C5d88eC28354543fE] = true;
-        cErc20DelegateWhitelist[address(0)][0x67E70eeB9DD170f7B4A9EF620720c9069D5e706C][false] = true;
-        cErc20DelegateWhitelist[address(0)][0x2b3dD0AE288c13a730F6C422e2262a9d3dA79Ed1][false] = true;
-        cEtherDelegateWhitelist[address(0)][0x60884c8FAaD1B30B1C76100dA92B76eD3aF849ba][false] = true;
     }
 
     /**
