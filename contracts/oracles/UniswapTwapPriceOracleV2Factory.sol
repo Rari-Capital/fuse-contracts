@@ -32,9 +32,11 @@ contract UniswapTwapPriceOracleV2Factory {
     mapping(address => mapping(address => UniswapTwapPriceOracleV2)) public oracles;
 
     /**
-     * @dev Constructor that sets the `UniswapTwapPriceOracleV2Root` and oracle implementation contract.
+     * @dev Constructor that sets the `UniswapTwapPriceOracleV2Root` and `UniswapTwapPriceOracleV2` implementation contract.
      */
     constructor (address _rootOracle, address _logic) public {
+        require(_rootOracle != address(0), "UniswapTwapPriceOracleV2Root not defined.");
+        require(_logic != address(0), "UniswapTwapPriceOracleV2 implementation/logic contract not defined.");
         rootOracle = _rootOracle;
         logic = _logic;
     }

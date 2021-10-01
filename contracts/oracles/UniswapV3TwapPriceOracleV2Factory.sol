@@ -27,10 +27,11 @@ contract UniswapV3TwapPriceOracleV2Factory {
     mapping(address => mapping(uint256 => mapping(address => UniswapV3TwapPriceOracleV2))) public oracles;
 
     /**
-     * @notice Constructor that stores the oracle implementation contract.
+     * @notice Constructor that stores the UniswapV3TwapPriceOracleV2 implementation/logic contract.
      * @param _logic The `UniswapV3TwapPriceOracleV2` implementation contract.
      */
     constructor(address _logic) public {
+        require(_logic != address(0), "UniswapV3TwapPriceOracleV2 implementation/logic contract not defined.");
         logic  = _logic;
     }
 

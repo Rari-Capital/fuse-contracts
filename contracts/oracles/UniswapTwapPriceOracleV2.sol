@@ -22,15 +22,6 @@ contract UniswapTwapPriceOracleV2 is Initializable, PriceOracle, BasePriceOracle
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @dev Constructor that sets the UniswapV2Factory.
-     */
-    function initialize(address _rootOracle, address _uniswapV2Factory, address _baseToken) external initializer {
-        rootOracle = UniswapTwapPriceOracleV2Root(_rootOracle);
-        uniswapV2Factory = _uniswapV2Factory;
-        baseToken = _baseToken == address(0) ? address(WETH) : _baseToken;
-    }
-
-    /**
      * @dev WETH token contract address.
      */
     address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -49,6 +40,17 @@ contract UniswapTwapPriceOracleV2 is Initializable, PriceOracle, BasePriceOracle
      * @dev The token on which to base TWAPs (its price must be available via `msg.sender`).
      */
     address public baseToken;
+
+    /**
+     * @dev Constructor that sets the UniswapTwapPriceOracleV2Root, UniswapV2Factory, and base token.
+     */
+    function initialize(address _rootOracle, address _uniswapV2Factory, address _baseToken) external initializer {
+        require(_rootOracle != address(0), "UniswapTwapPriceOracleV2Root not defined.");
+        require(_uniswapV2Factory != address(0), "UniswapV2Factory not defined.");
+        rootOracle = UniswapTwapPriceOracleV2Root(_rootOracle);
+        uniswapV2Factory = _uniswapV2Factory;
+        baseToken = _baseToken == address(0) ? address(WETH) : _baseToken;
+    }
     
     /**
      * @notice Returns the price in ETH of the token underlying `cToken`.

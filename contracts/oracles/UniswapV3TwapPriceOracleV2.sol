@@ -46,6 +46,17 @@ contract UniswapV3TwapPriceOracleV2 is Initializable, PriceOracle, BasePriceOrac
      * @dev Base token (WETH by default).
      */
     address public baseToken;
+
+    /**
+     * @dev Constructor that sets the UniswapV3Factory and fee tier.
+     */
+    function initialize(address _uniswapV3Factory, uint24 _feeTier, address _baseToken) external initializer {
+        require(_uniswapV3Factory != address(0), "UniswapV3Factory not defined.");
+        require(_feeTier == 500 || _feeTier == 3000 || _feeTier == 10000, "Invalid fee tier.");
+        uniswapV3Factory = _uniswapV3Factory;
+        feeTier = _feeTier;
+        baseToken = _baseToken == address(0) ? address(WETH) : _baseToken;
+    }
     
     /**
      * @dev Returns the price in ETH of `underlying` given `factory`.
@@ -60,17 +71,6 @@ contract UniswapV3TwapPriceOracleV2 is Initializable, PriceOracle, BasePriceOrac
         uint128 baseUnit = 10 ** uint128(ERC20Upgradeable(underlying).decimals());
         uint256 quote = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, underlying, baseToken);
         return baseToken == address(WETH) ? quote : quote.mul(BasePriceOracle(msg.sender).price(baseToken)).div(10 ** uint256(ERC20Upgradeable(baseToken).decimals()));
-    }
-
-    /**
-     * @dev Constructor that sets the UniswapV3Factory and fee tier.
-     */
-    function initialize(address _uniswapV3Factory, uint24 _feeTier, address _baseToken) external initializer {
-        require(_uniswapV3Factory != address(0));
-        require(_feeTier == 500 || _feeTier == 3000 || _feeTier == 10000);
-        uniswapV3Factory = _uniswapV3Factory;
-        feeTier = _feeTier;
-        baseToken = _baseToken == address(0) ? address(WETH) : _baseToken;
     }
     
     /**
