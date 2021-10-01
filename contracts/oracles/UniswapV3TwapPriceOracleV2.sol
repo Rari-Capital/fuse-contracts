@@ -65,6 +65,8 @@ contract UniswapV3TwapPriceOracleV2 is BasePriceOracle {
      * @dev Constructor that sets the UniswapV3Factory and fee tier.
      */
     constructor (address _uniswapV3Factory, uint24 _feeTier, address _baseToken) public {
+        require(_uniswapV3Factory != address(0));
+        require(_feeTier == 500 || _feeTier == 3000 || _feeTier == 10000);
         uniswapV3Factory = _uniswapV3Factory;
         feeTier = _feeTier;
         baseToken = _baseToken == address(0) ? address(WETH) : _baseToken;
