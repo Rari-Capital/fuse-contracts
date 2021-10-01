@@ -10,6 +10,7 @@ import "./external/compound/Comptroller.sol";
 import "./external/compound/PriceOracle.sol";
 import "./external/compound/CToken.sol";
 import "./external/compound/CErc20.sol";
+import "./external/compound/RewardsDistributor.sol";
 
 import "./external/uniswap/IUniswapV2Pair.sol";
 
@@ -283,7 +284,7 @@ contract FusePoolLens is Initializable {
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
      * @return An array of Fuse pool users, the pool's close factor, and the pool's liquidation incentive.
      */
-    function getPoolUsersWithData(Comptroller comptroller, uint256 maxHealth) public returns (FusePoolUser[] memory, uint256, uint256) {
+    function getPoolUsersWithData(Comptroller comptroller, uint256 maxHealth) external returns (FusePoolUser[] memory, uint256, uint256) {
         address[] memory users = comptroller.getAllBorrowers();
         uint256 arrayLength = 0;
 
@@ -330,26 +331,19 @@ contract FusePoolLens is Initializable {
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
      * @return An array of pools' Comptroller proxy addresses, an array of arrays of Fuse pool users, an array of pools' close factors, an array of pools' liquidation incentives, and an array of booleans indicating if retrieving each pool's data failed.
      */
-    function getPublicPoolUsersWithData(uint256 maxHealth) external returns (address[] memory, FusePoolUser[][] memory, uint256[] memory, uint256[] memory, bool[] memory) {
-        (, FusePoolDirectory.FusePool[] memory publicPools) = directory.getPublicPools();
-        address[] memory comptrollers = new address[](publicPools.length);
-        FusePoolUser[][] memory users = new FusePoolUser[][](publicPools.length);
-        uint256[] memory closeFactors = new uint256[](publicPools.length);
-        uint256[] memory liquidationIncentives = new uint256[](publicPools.length);
-        bool[] memory errored = new bool[](publicPools.length);
+    function getPublicPoolUsersWithData(uint256 maxHealth) external returns (Comptroller[] memory, FusePoolUser[][] memory, uint256[] memory, uint256[] memory, bool[] memory) {
+        // Get Comptroller addresses of all public pools
+        Comptroller[] memory comptrollers;
 
-        for (uint256 i = 0; i < publicPools.length; i++) {
-            comptrollers[i] = publicPools[i].comptroller;
-
-            try this.getPoolUsersWithData(Comptroller(publicPools[i].comptroller), maxHealth) returns (FusePoolUser[] memory _users, uint256 closeFactor, uint256 liquidationIncentive) {
-                users[i] = _users;
-                closeFactors[i] = closeFactor;
-                liquidationIncentives[i] = liquidationIncentive;
-            } catch {
-                errored[i] = true;
-            }
+        // Scope to avoid "stack too deep" error
+        {
+            (, FusePoolDirectory.FusePool[] memory publicPools) = directory.getPublicPools();
+            comptrollers = new Comptroller[](publicPools.length);
+            for (uint256 i = 0; i < publicPools.length; i++) comptrollers[i] = Comptroller(publicPools[i].comptroller);
         }
 
+        // Get all public pools' data
+        (FusePoolUser[][] memory users, uint256[] memory closeFactors, uint256[] memory liquidationIncentives, bool[] memory errored) = getPoolUsersWithData(comptrollers, maxHealth);
         return (comptrollers, users, closeFactors, liquidationIncentives, errored);
     }
 
@@ -359,18 +353,25 @@ contract FusePoolLens is Initializable {
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      * @param comptrollers The Comptroller proxy contracts of the Fuse pools.
      * @param maxHealth The maximum health (scaled by 1e18) for which to return data.
-     * @return An array of arrays of Fuse pool users, an array of pools' close factors, and an array of pools' liquidation incentives.
+     * @return An array of arrays of Fuse pool users, an array of pools' close factors, an array of pools' liquidation incentives, and an array of booleans indicating if retrieving each pool's data failed.
      */
-    function getPoolUsersWithData(Comptroller[] calldata comptrollers, uint256 maxHealth) external returns (FusePoolUser[][] memory, uint256[] memory, uint256[] memory) {
+    function getPoolUsersWithData(Comptroller[] memory comptrollers, uint256 maxHealth) public returns (FusePoolUser[][] memory, uint256[] memory, uint256[] memory, bool[] memory) {
         FusePoolUser[][] memory users = new FusePoolUser[][](comptrollers.length);
         uint256[] memory closeFactors = new uint256[](comptrollers.length);
         uint256[] memory liquidationIncentives = new uint256[](comptrollers.length);
+        bool[] memory errored = new bool[](comptrollers.length);
 
         for (uint256 i = 0; i < comptrollers.length; i++) {
-            (users[i], closeFactors[i], liquidationIncentives[i]) = getPoolUsersWithData(Comptroller(comptrollers[i]), maxHealth);
+            try this.getPoolUsersWithData(Comptroller(comptrollers[i]), maxHealth) returns (FusePoolUser[] memory _users, uint256 closeFactor, uint256 liquidationIncentive) {
+                users[i] = _users;
+                closeFactors[i] = closeFactor;
+                liquidationIncentives[i] = liquidationIncentive;
+            } catch {
+                errored[i] = true;
+            }
         }
 
-        return (users, closeFactors, liquidationIncentives);
+        return (users, closeFactors, liquidationIncentives, errored);
     }
 
     /**
@@ -384,14 +385,16 @@ contract FusePoolLens is Initializable {
         for (uint256 i = 0; i < pools.length; i++) {
             Comptroller comptroller = Comptroller(pools[i].comptroller);
 
-            if (comptroller.suppliers(account)) {
-                CToken[] memory allMarkets = comptroller.getAllMarkets();
+            try comptroller.suppliers(account) returns (bool isSupplier) {
+                if (isSupplier) {
+                    CToken[] memory allMarkets = comptroller.getAllMarkets();
 
-                for (uint256 j = 0; j < allMarkets.length; j++) if (allMarkets[j].balanceOf(account) > 0) {
-                    arrayLength++;
-                    break;
+                    for (uint256 j = 0; j < allMarkets.length; j++) if (allMarkets[j].balanceOf(account) > 0) {
+                        arrayLength++;
+                        break;
+                    }
                 }
-            }
+            } catch {}
         }
 
         uint256[] memory indexes = new uint256[](arrayLength);
@@ -401,16 +404,18 @@ contract FusePoolLens is Initializable {
         for (uint256 i = 0; i < pools.length; i++) {
             Comptroller comptroller = Comptroller(pools[i].comptroller);
 
-            if (comptroller.suppliers(account)) {
-                CToken[] memory allMarkets = comptroller.getAllMarkets();
+            try comptroller.suppliers(account) returns (bool isSupplier) {
+                if (isSupplier) {
+                    CToken[] memory allMarkets = comptroller.getAllMarkets();
 
-                for (uint256 j = 0; j < allMarkets.length; j++) if (allMarkets[j].balanceOf(account) > 0) {
-                    indexes[index] = i;
-                    accountPools[index] = pools[i];
-                    index++;
-                    break;
+                    for (uint256 j = 0; j < allMarkets.length; j++) if (allMarkets[j].balanceOf(account) > 0) {
+                        indexes[index] = i;
+                        accountPools[index] = pools[i];
+                        index++;
+                        break;
+                    }
                 }
-            }
+            } catch {}
         }
 
         return (indexes, accountPools);
@@ -585,5 +590,227 @@ contract FusePoolLens is Initializable {
         }
         
         return (comptrollerAdmin, comptrollerAdminHasRights, comptrollerFuseAdminHasRights, outliers);
+    }
+    
+    /**
+     * @notice Determine the maximum redeem amount of a cToken.
+     * @param cTokenModify The market to hypothetically redeem in.
+     * @param account The account to determine liquidity for.
+     * @return Maximum redeem amount.
+     */
+    function getMaxRedeem(address account, CToken cTokenModify) external returns (uint256) {
+        return getMaxRedeemOrBorrow(account, cTokenModify, false);
+    }
+
+    /**
+     * @notice Determine the maximum borrow amount of a cToken.
+     * @param cTokenModify The market to hypothetically borrow in.
+     * @param account The account to determine liquidity for.
+     * @return Maximum borrow amount.
+     */
+    function getMaxBorrow(address account, CToken cTokenModify) external returns (uint256) {
+        return getMaxRedeemOrBorrow(account, cTokenModify, true);
+    }
+
+    /**
+     * @dev Internal function to determine the maximum borrow/redeem amount of a cToken.
+     * @param cTokenModify The market to hypothetically borrow/redeem in.
+     * @param account The account to determine liquidity for.
+     * @return Maximum borrow/redeem amount.
+     */
+    function getMaxRedeemOrBorrow(address account, CToken cTokenModify, bool isBorrow) internal returns (uint256) {
+        // Accrue interest
+        uint256 balanceOfUnderlying = cTokenModify.balanceOfUnderlying(account);
+
+        // Get account liquidity
+        Comptroller comptroller = Comptroller(cTokenModify.comptroller());
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller.getAccountLiquidity(account);
+        require(err == 0, "Comptroller error when calculating account liquidity.");
+        if (shortfall > 0) return 0; // Shortfall, so no more borrow/redeem
+
+        // Get max borrow/redeem
+        uint256 maxBorrowOrRedeemAmount;
+
+        if (!isBorrow && !comptroller.checkMembership(msg.sender, cTokenModify)) {
+            // Max redeem = balance of underlying if not used as collateral
+            maxBorrowOrRedeemAmount = balanceOfUnderlying;
+        } else {
+            // Avoid "stack too deep" error by separating this logic
+            maxBorrowOrRedeemAmount = _getMaxRedeemOrBorrow(liquidity, cTokenModify, isBorrow);
+
+            // Redeem only: max out at underlying balance
+            if (!isBorrow && balanceOfUnderlying < maxBorrowOrRedeemAmount) maxBorrowOrRedeemAmount = balanceOfUnderlying;
+        }
+
+        // Get max borrow or redeem considering cToken liquidity
+        uint256 cTokenLiquidity = cTokenModify.getCash();
+
+        // Return the minimum of the two maximums
+        return maxBorrowOrRedeemAmount <= cTokenLiquidity ? maxBorrowOrRedeemAmount : cTokenLiquidity;
+    }
+
+    /**
+     * @dev Portion of the logic in `getMaxRedeemOrBorrow` above separated to avoid "stack too deep" errors.
+     */
+    function _getMaxRedeemOrBorrow(uint256 liquidity, CToken cTokenModify, bool isBorrow) internal view returns (uint256) {
+        if (liquidity <= 0) return 0; // No available account liquidity, so no more borrow/redeem
+
+        // Get the normalized price of the asset
+        Comptroller comptroller = Comptroller(cTokenModify.comptroller());
+        uint256 conversionFactor = comptroller.oracle().getUnderlyingPrice(cTokenModify);
+        require(conversionFactor > 0, "Oracle price error.");
+
+        // Pre-compute a conversion factor from tokens -> ether (normalized price value)
+        if (!isBorrow) {
+            (, uint256 collateralFactorMantissa) = comptroller.markets(address(cTokenModify));
+            conversionFactor = collateralFactorMantissa.mul(conversionFactor);
+        }
+
+        // Get max borrow or redeem considering excess account liquidity
+        return liquidity.mul(1e18).div(conversionFactor);
+    }
+
+    /**
+     * @notice Returns an array of all markets on the RewardsDistributor (can be across different pools), their Comptrollers, their supply speeds, and their borrow speeds.
+     * @param distributor The RewardsDistributor to check.
+     */
+    function getRewardSpeedsByDistributor(RewardsDistributor distributor) external view returns (CToken[] memory, Comptroller[] memory, uint256[] memory, uint256[] memory) {
+        CToken[] memory allMarkets = distributor.getAllMarkets();
+        Comptroller[] memory comptrollers = new Comptroller[](allMarkets.length);
+        uint256[] memory supplySpeeds = new uint256[](allMarkets.length);
+        uint256[] memory borrowSpeeds = new uint256[](allMarkets.length);
+
+        // Get reward speeds for each market
+        for (uint256 i = 0; i < allMarkets.length; i++) {
+            CToken cToken = allMarkets[i];
+            comptrollers[i] = Comptroller(cToken.comptroller());
+            supplySpeeds[i] = distributor.compSupplySpeeds(address(cToken));
+            borrowSpeeds[i] = distributor.compBorrowSpeeds(address(cToken));
+        }
+
+        return (allMarkets, comptrollers, supplySpeeds, borrowSpeeds);
+    }
+
+    /**
+     * @notice Returns an array of all markets, an array of all `RewardsDistributor` contracts, an array of reward token addresses for each `RewardsDistributor`, an array of supply speeds for each distributor for each, and their borrow speeds.
+     * @param comptroller The Fuse pool Comptroller to check.
+     */
+    function getRewardSpeedsByPool(Comptroller comptroller) external view returns (CToken[] memory, RewardsDistributor[] memory, address[] memory, uint256[][] memory, uint256[][] memory) {
+        CToken[] memory allMarkets = comptroller.getAllMarkets();
+        RewardsDistributor[] memory distributors = comptroller.getRewardsDistributors();
+        address[] memory rewardTokens = new address[](distributors.length);
+        uint256[][] memory supplySpeeds = new uint256[][](allMarkets.length);
+        uint256[][] memory borrowSpeeds = new uint256[][](allMarkets.length);
+
+        // Get reward tokens for each distributor
+        for (uint256 i = 0; i < distributors.length; i++) rewardTokens[i] = distributors[i].rewardToken();
+
+        // Get reward speeds for each market for each distributor
+        for (uint256 i = 0; i < allMarkets.length; i++) {
+            for (uint256 j = 0; j < distributors.length; j++) {
+                address cToken = address(allMarkets[i]);
+                RewardsDistributor distributor = distributors[j];
+                supplySpeeds[i][j] = distributor.compSupplySpeeds(cToken);
+                borrowSpeeds[i][j] = distributor.compBorrowSpeeds(cToken);
+            }
+        }
+
+        return (allMarkets, distributors, rewardTokens, supplySpeeds, borrowSpeeds);
+    }
+
+    /**
+     * @notice Returns unaccrued rewards by `holder` from `cToken` on `distributor`.
+     * @param holder The address to check.
+     * @param distributor The RewardsDistributor to check.
+     * @param cToken The CToken to check.
+     * @return Unaccrued (unclaimed) supply-side rewards and unaccrued (unclaimed) borrow-side rewards.
+     */
+    function getUnaccruedRewards(address holder, RewardsDistributor distributor, CToken cToken) internal returns (uint256, uint256) {
+        // Get unaccrued supply rewards
+        uint256 compAccruedPrior = distributor.compAccrued(holder);
+        distributor.flywheelPreSupplierAction(address(cToken), holder);
+        uint256 supplyRewardsUnaccrued = distributor.compAccrued(holder).sub(compAccruedPrior);
+
+        // Get unaccrued borrow rewards
+        compAccruedPrior = distributor.compAccrued(holder);
+        distributor.flywheelPreBorrowerAction(address(cToken), holder);
+        uint256 borrowRewardsUnaccrued = distributor.compAccrued(holder).sub(compAccruedPrior);
+
+        return (supplyRewardsUnaccrued, borrowRewardsUnaccrued);
+    }
+
+    /**
+     * @notice Returns all unclaimed rewards accrued by the `holder` on `rewardsDistributor`.
+     * @param holder The address to check.
+     * @param distributor The RewardsDistributor to check.
+     * @return Total quantity of unclaimed rewards, quantity of accrued (unclaimed) rewards, array of cTokens, array of unaccrued (unclaimed) supply-side rewards per cToken, and array of unaccrued (unclaimed) borrow-side rewards per cToken.
+     */
+    function getUnclaimedRewardsByDistributor(address holder, RewardsDistributor distributor) external returns (uint256, uint256, CToken[] memory, uint256[] memory, uint256[] memory) {
+        uint256 compAccruedInitial = distributor.compAccrued(holder);
+        CToken[] memory allMarkets = distributor.getAllMarkets();
+        uint256[] memory supplyRewardsUnaccrued = new uint256[](allMarkets.length);
+        uint256[] memory borrowRewardsUnaccrued = new uint256[](allMarkets.length);
+
+        for (uint i = 0; i < allMarkets.length; i++) {
+            (supplyRewardsUnaccrued[i], borrowRewardsUnaccrued[i]) = getUnaccruedRewards(holder, distributor, allMarkets[i]);
+        }
+
+        return (distributor.compAccrued(holder), compAccruedInitial, allMarkets, supplyRewardsUnaccrued, borrowRewardsUnaccrued);
+    }
+
+    /**
+     * @notice Returns unclaimed rewards accrued by the `holder` on `distributors`.
+     * @param holder The address to check.
+     * @param distributors The `RewardsDistributor` contracts to check.
+     */
+    function getUnclaimedRewardsByDistributors(address holder, RewardsDistributor[] memory distributors) external returns (address[] memory, uint256[] memory) {
+        address[] memory rewardTokens = new address[](distributors.length);
+        uint256[] memory compUnclaimed = new uint256[](distributors.length);
+
+        for (uint i = 0; i < distributors.length; i++) {
+            CToken[] memory allMarkets = distributors[i].getAllMarkets();
+            for (uint j = 0; j < allMarkets.length; j++) getUnaccruedRewards(holder, distributors[i], allMarkets[i]);
+            rewardTokens[i] = distributors[i].rewardToken();
+            compUnclaimed[i] = distributors[i].compAccrued(holder);
+        }
+
+        return (rewardTokens, compUnclaimed);
+    }
+
+    /**
+     * @notice Returns an array of arrays of `RewardsDistributor` contracts for each pool `supplier` has supplied to (may be duplicates).
+     * @param supplier The address to check.
+     */
+    function getRewardsDistributorsBySupplier(address supplier) external view returns (RewardsDistributor[][] memory) {
+        // Get array length
+        FusePoolDirectory.FusePool[] memory pools = directory.getAllPools();
+        uint256 arrayLength = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            try Comptroller(pools[i].comptroller).suppliers(supplier) returns (bool isSupplier) {
+                if (isSupplier) arrayLength++;
+            } catch {}
+        }
+
+        // Build array
+        RewardsDistributor[][] memory distributors = new RewardsDistributor[][](arrayLength);
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            Comptroller comptroller = Comptroller(pools[i].comptroller);
+
+            try comptroller.suppliers(supplier) returns (bool isSupplier) {
+                if (isSupplier) {
+                    try comptroller.getRewardsDistributors() returns (RewardsDistributor[] memory _distributors) {
+                        distributors[index] = _distributors;
+                    } catch {}
+
+                    index++;
+                }
+            } catch {}
+        }
+
+        // Return distributors
+        return distributors;
     }
 }
