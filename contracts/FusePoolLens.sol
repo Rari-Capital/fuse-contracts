@@ -39,13 +39,36 @@ contract FusePoolLens is Initializable {
     FusePoolDirectory public directory;
 
     /**
+     * @dev Struct for Fuse pool summary data.
+     */
+    struct FusePoolData {
+        uint256 totalSupply;
+        uint256 totalBorrow;
+        address[] underlyingTokens;
+        string[] underlyingSymbols;
+        bool whitelistedAdmin;
+    }
+
+    /**
      * @notice Returns arrays of all public Fuse pool indexes, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPublicPoolsWithData() external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
+    function getPublicPoolsWithData() external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, FusePoolData[] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory publicPools) = directory.getPublicPools();
-        return getPoolsWithData(indexes, publicPools);
+        (FusePoolData[] memory data, bool[] memory errored) = getPoolsData(publicPools);
+        return (indexes, publicPools, data, errored);
+    }
+
+    /**
+     * @notice Returns arrays of all whitelisted public Fuse pool indexes, data, total supply balances (in ETH), total borrow balances (in ETH), arrays of underlying token addresses, arrays of underlying asset symbols, and booleans indicating if retrieving each pool's data failed.
+     * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
+     * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
+     */
+    function getPublicPoolsByVerificationWithData(bool whitelistedAdmin) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, FusePoolData[] memory, bool[] memory) {
+        (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory publicPools) = directory.getPublicPoolsByVerification(whitelistedAdmin);
+        (FusePoolData[] memory data, bool[] memory errored) = getPoolsData(publicPools);
+        return (indexes, publicPools, data, errored);
     }
 
     /**
@@ -53,9 +76,10 @@ contract FusePoolLens is Initializable {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
+    function getPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, FusePoolData[] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = directory.getPoolsByAccount(account);
-        return getPoolsWithData(indexes, accountPools);
+        (FusePoolData[] memory data, bool[] memory errored) = getPoolsData(accountPools);
+        return (indexes, accountPools, data, errored);
     }
 
     /**
@@ -63,31 +87,25 @@ contract FusePoolLens is Initializable {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPoolsWithData(uint256[] memory indexes, FusePoolDirectory.FusePool[] memory pools) internal returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
-        uint256[] memory totalSupply = new uint256[](pools.length);
-        uint256[] memory totalBorrow = new uint256[](pools.length);
-        address[][] memory underlyingTokens = new address[][](pools.length);
-        string[][] memory underlyingSymbols = new string[][](pools.length);
+    function getPoolsData(FusePoolDirectory.FusePool[] memory pools) internal returns (FusePoolData[] memory, bool[] memory) {
+        FusePoolData[] memory data = new FusePoolData[](pools.length);
         bool[] memory errored = new bool[](pools.length);
         
         for (uint256 i = 0; i < pools.length; i++) {
-            try this.getPoolSummary(Comptroller(pools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols) {
-                totalSupply[i] = _totalSupply;
-                totalBorrow[i] = _totalBorrow;
-                underlyingTokens[i] = _underlyingTokens;
-                underlyingSymbols[i] = _underlyingSymbols;
+            try this.getPoolSummary(Comptroller(pools[i].comptroller)) returns (uint256 _totalSupply, uint256 _totalBorrow, address[] memory _underlyingTokens, string[] memory _underlyingSymbols, bool _whitelistedAdmin) {
+                data[i] = FusePoolData(_totalSupply, _totalBorrow, _underlyingTokens, _underlyingSymbols, _whitelistedAdmin);
             } catch {
                 errored[i] = true;
             }
         }
 
-        return (indexes, pools, totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, errored);
+        return (data, errored);
     }
 
     /**
      * @notice Returns total supply balance (in ETH), total borrow balance (in ETH), underlying token addresses, and underlying token symbols of a Fuse pool.
      */
-    function getPoolSummary(Comptroller comptroller) external returns (uint256, uint256, address[] memory, string[] memory) {
+    function getPoolSummary(Comptroller comptroller) external returns (uint256, uint256, address[] memory, string[] memory, bool) {
         uint256 totalBorrow = 0;
         uint256 totalSupply = 0;
         CToken[] memory cTokens = comptroller.getAllMarkets();
@@ -114,7 +132,8 @@ contract FusePoolLens is Initializable {
             }
         }
 
-        return (totalSupply, totalBorrow, underlyingTokens, underlyingSymbols);
+        bool whitelistedAdmin = directory.adminWhitelist(comptroller.admin());
+        return (totalSupply, totalBorrow, underlyingTokens, underlyingSymbols, whitelistedAdmin);
     }
 
     /**
@@ -142,6 +161,7 @@ contract FusePoolLens is Initializable {
         uint256 reserveFactor;
         uint256 adminFee;
         uint256 fuseFee;
+        bool borrowGuardianPaused;
     }
 
     /**
@@ -213,6 +233,7 @@ contract FusePoolLens is Initializable {
             asset.reserveFactor = cToken.reserveFactorMantissa();
             asset.adminFee = cToken.adminFeeMantissa();
             asset.fuseFee = cToken.fuseFeeMantissa();
+            asset.borrowGuardianPaused = comptroller.borrowGuardianPaused(address(cToken));
 
             // Add to assets array and increment index
             detailedAssets[index] = asset;
@@ -426,9 +447,10 @@ contract FusePoolLens is Initializable {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getPoolsBySupplierWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
+    function getPoolsBySupplierWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, FusePoolData[] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = getPoolsBySupplier(account);
-        return getPoolsWithData(indexes, accountPools);
+        (FusePoolData[] memory data, bool[] memory errored) = getPoolsData(accountPools);
+        return (indexes, accountPools, data, errored);
     }
 
     /**
@@ -519,9 +541,10 @@ contract FusePoolLens is Initializable {
      * @dev This function is not designed to be called in a transaction: it is too gas-intensive.
      * Ideally, we can add the `view` modifier, but many cToken functions potentially modify the state.
      */
-    function getWhitelistedPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, uint256[] memory, uint256[] memory, address[][] memory, string[][] memory, bool[] memory) {
+    function getWhitelistedPoolsByAccountWithData(address account) external returns (uint256[] memory, FusePoolDirectory.FusePool[] memory, FusePoolData[] memory, bool[] memory) {
         (uint256[] memory indexes, FusePoolDirectory.FusePool[] memory accountPools) = getWhitelistedPoolsByAccount(account);
-        return getPoolsWithData(indexes, accountPools);
+        (FusePoolData[] memory data, bool[] memory errored) = getPoolsData(accountPools);
+        return (indexes, accountPools, data, errored);
     }
 
     struct CTokenOwnership {

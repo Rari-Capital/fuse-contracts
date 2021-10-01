@@ -30,6 +30,8 @@ interface Comptroller {
     function _setLiquidationIncentive(uint newLiquidationIncentiveMantissa) external returns (uint);
     function _become(Unitroller unitroller) external;
 
+    function borrowGuardianPaused(address cToken) external view returns (bool);
+
     function getRewardsDistributors() external view returns (RewardsDistributor[] memory);
     function getAllMarkets() external view returns (CToken[] memory);
     function getAllBorrowers() external view returns (address[] memory);
