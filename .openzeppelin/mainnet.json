@@ -1,5 +1,14 @@
 {
-  "manifestVersion": "3.1",
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0x485DD130c2052770D4aa27DF91049Ee70b613F61",
+    "txHash": "0x27e3fdaf3f18bc755ae151d7925e9456a59f9fe65aee9e6f1ecae024efff2260"
+  },
+  "proxies": [
+    {
+      "address": "0x6Dc585Ad66A10214Ef0502492B0CC02F0e836eec",
+      "txHash": "0xc0d03928259e4510359e1435135bceaa805a9eead8ca617e4332c16cb0a3104b",
+      "kind": "transparent"
     },
     {
       "address": "0xc76190E04012f26A364228Cfc41690429C44165d",
@@ -624,10 +633,97 @@
                 "label": "allowResign",
                 "type": "t_bool"
               },
+              {
+                "label": "becomeImplementationData",
+                "type": "t_bytes_storage"
+              }
+            ]
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_mapping(t_address,t_int256)": {
+            "label": "mapping(address => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "b56d14678677f641886a45770121e6ac67d913e137c58e600df489dbc0203ac5": {
+      "address": "0x6bCc070637A6eB4a13Df47b906E4017530fd125D",
+      "txHash": "0x9f307b3d4abce8d60607938fe8c93f1cbdb8226e333dbe1c8b0e457d1a9020fe",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "FusePoolLens",
+            "label": "directory",
+            "type": "t_contract(FusePoolDirectory)1867",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolLens.sol:39"
+          }
+        ],
+        "types": {
+          "t_contract(FusePoolDirectory)1867": {
+            "label": "contract FusePoolDirectory"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    },
+    "76cb4f4705a9f21ceea48d5fdad59c80a99c262a3f5e9e51df82194a57221a6d": {
+      "address": "0xec929dFe6C95a8fbCb8AD5a91e14975a79ad7117",
+      "txHash": "0x99d3d9581e8d2db360e315932003ae3839a1fdba7dcab371473b2c5bf9947210",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "FusePoolLensSecondary",
+            "label": "directory",
+            "type": "t_contract(FusePoolDirectory)1867",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FusePoolLensSecondary.sol:39"
+          }
+        ],
+        "types": {
+          "t_contract(FusePoolDirectory)1867": {
+            "label": "contract FusePoolDirectory"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
     }
-  },
-  "admin": {
-    "address": "0x485DD130c2052770D4aa27DF91049Ee70b613F61",
-    "txHash": "0x27e3fdaf3f18bc755ae151d7925e9456a59f9fe65aee9e6f1ecae024efff2260"
   }
 }
