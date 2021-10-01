@@ -20,6 +20,11 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
     mapping(address => PriceOracle) public oracles;
 
     /**
+     * @dev Array of underlying token addresses that have ever been added to this contract.
+     */
+    address[] internal tokens;
+
+    /**
      * @dev The administrator of this `MasterPriceOracle`.
      */
     address public admin;
@@ -38,7 +43,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
      */
     constructor (address[] memory underlyings, PriceOracle[] memory _oracles, address _admin, bool _canAdminOverwrite) public {
         // Input validation
-        require(underlyings.length > 0 && underlyings.length == _oracles.length, "Lengths of both arrays must be equal and greater than 0.");
+        require(underlyings.length == _oracles.length, "Lengths of both arrays must be equal.");
 
         // Initialize state variables
         for (uint256 i = 0; i < underlyings.length; i++) oracles[underlyings[i]] = _oracles[i];
@@ -57,6 +62,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         for (uint256 i = 0; i < underlyings.length; i++) {
             if (!canAdminOverwrite) require(address(oracles[underlyings[i]]) == address(0), "Admin cannot overwrite existing assignments of oracles to underlying tokens.");
             oracles[underlyings[i]] = _oracles[i];
+            tokens.push(underlyings[i]);
         }
     }
 
@@ -112,5 +118,14 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
         // Get underlying price from assigned oracle
         require(address(oracles[underlying]) != address(0), "Price oracle not found for this underlying token address.");
         return BasePriceOracle(address(oracles[underlying])).price(underlying);
+    }
+
+    /**
+     * @dev Returns arrays of all underlying tokens and their oracles.
+     */
+    function getAllOracles() external view returns (address[] memory, PriceOracle[] memory) {
+        PriceOracle[] memory allOracles = new PriceOracle[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) allOracles[i] = oracles[tokens[i]];
+        return (tokens, allOracles);
     }
 }
