@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+
 import "./UniswapV3TwapPriceOracleV2.sol";
 
 /**
@@ -9,7 +11,28 @@ import "./UniswapV3TwapPriceOracleV2.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
 contract UniswapV3TwapPriceOracleV2Factory {
-    using SafeMathUpgradeable for uint256;
+    /**
+     * @dev WETH token contract address.
+     */
+    address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    /**
+     * @dev Implementation address for the `UniswapV3TwapPriceOracleV2`.
+     */
+    address immutable public logic;
+
+    /**
+     * @notice Maps `UniswapV3Factory` contracts to fee tiers to base tokens to `UniswapV3TwapPriceOracleV2` contract addresses.
+     */
+    mapping(address => mapping(uint256 => mapping(address => UniswapV3TwapPriceOracleV2))) public oracles;
+
+    /**
+     * @notice Constructor that stores the oracle implementation contract.
+     * @param _logic The `UniswapV3TwapPriceOracleV2` implementation contract.
+     */
+    constructor(address _logic) public {
+        logic  = _logic;
+    }
 
     /**
      * @notice Deploys a `UniswapV3TwapPriceOracleV2`.
@@ -17,7 +40,7 @@ contract UniswapV3TwapPriceOracleV2Factory {
      * @param feeTier The fee tier of the pairs for which this oracle will be used.
      * @param baseToken The base token of the pairs for which this oracle will be used.
      */
-    function deploy(address uniswapV3Factory, uint256 feeTier, address baseToken) external returns (address) {
+    function deploy(address uniswapV3Factory, uint24 feeTier, address baseToken) external returns (address) {
         // Input validation
         if (baseToken == address(0)) baseToken = address(WETH);
 
@@ -26,16 +49,9 @@ contract UniswapV3TwapPriceOracleV2Factory {
         if (currentOracle != address(0)) return currentOracle;
 
         // Deploy oracle
-        bytes memory bytecode = abi.encodePacked(type(UniswapV3TwapPriceOracleV2).creationCode, abi.encode(uniswapV3Factory, feeTier, baseToken));
         bytes32 salt = keccak256(abi.encodePacked(uniswapV3Factory, feeTier, baseToken));
-        address oracle;
-
-        assembly {
-            oracle := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
-            if iszero(extcodesize(oracle)) {
-                revert(0, "Failed to deploy price oracle.")
-            }
-        }
+        address oracle = ClonesUpgradeable.cloneDeterministic(logic, salt);
+        UniswapV3TwapPriceOracleV2(oracle).initialize(uniswapV3Factory, feeTier, baseToken);
 
         // Set oracle in state
         oracles[uniswapV3Factory][feeTier][baseToken] = UniswapV3TwapPriceOracleV2(oracle);
@@ -43,14 +59,4 @@ contract UniswapV3TwapPriceOracleV2Factory {
         // Return oracle address
         return oracle;
     }
-
-    /**
-     * @dev WETH token contract address.
-     */
-    address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-
-    /**
-     * @notice Maps `UniswapV3Factory` contracts to fee tiers to base tokens to `UniswapV3TwapPriceOracleV2` contract addresses.
-     */
-    mapping(address => mapping(uint256 => mapping(address => UniswapV3TwapPriceOracleV2))) public oracles;
 }

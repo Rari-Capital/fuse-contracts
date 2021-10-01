@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+
 import "./UniswapTwapPriceOracleV2.sol";
 
 /**
@@ -9,13 +11,32 @@ import "./UniswapTwapPriceOracleV2.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
 contract UniswapTwapPriceOracleV2Factory {
-    using SafeMathUpgradeable for uint256;
+    /**
+     * @dev WETH token contract address.
+     */
+    address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /**
-     * @dev Constructor that sets the `UniswapTwapPriceOracleV2Root`.
+     * @dev `UniswapTwapPriceOracleV2Root` contract address.
      */
-    constructor (address _rootOracle) public {
+    address immutable public rootOracle;
+
+    /**
+     * @dev Implementation address for the `UniswapV3TwapPriceOracleV2`.
+     */
+    address immutable public logic;
+
+    /**
+     * @notice Maps `UniswapV2Factory` contracts to base tokens to `UniswapTwapPriceOracleV2` contract addresses.
+     */
+    mapping(address => mapping(address => UniswapTwapPriceOracleV2)) public oracles;
+
+    /**
+     * @dev Constructor that sets the `UniswapTwapPriceOracleV2Root` and oracle implementation contract.
+     */
+    constructor (address _rootOracle, address _logic) public {
         rootOracle = _rootOracle;
+        logic = _logic;
     }
 
     /**
@@ -32,16 +53,9 @@ contract UniswapTwapPriceOracleV2Factory {
         if (currentOracle != address(0)) return currentOracle;
 
         // Deploy oracle
-        bytes memory bytecode = abi.encodePacked(type(UniswapTwapPriceOracleV2).creationCode, abi.encode(rootOracle, uniswapV2Factory, baseToken));
         bytes32 salt = keccak256(abi.encodePacked(uniswapV2Factory, baseToken));
-        address oracle;
-
-        assembly {
-            oracle := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
-            if iszero(extcodesize(oracle)) {
-                revert(0, "Failed to deploy price oracle.")
-            }
-        }
+        address oracle = ClonesUpgradeable.cloneDeterministic(logic, salt);
+        UniswapTwapPriceOracleV2(oracle).initialize(rootOracle, uniswapV2Factory, baseToken);
 
         // Set oracle in state
         oracles[uniswapV2Factory][baseToken] = UniswapTwapPriceOracleV2(oracle);
@@ -49,19 +63,4 @@ contract UniswapTwapPriceOracleV2Factory {
         // Return oracle address
         return oracle;
     }
-
-    /**
-     * @dev WETH token contract address.
-     */
-    address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-
-    /**
-     * @dev `UniswapTwapPriceOracleV2Root` contract address.
-     */
-    address immutable public rootOracle;
-
-    /**
-     * @notice Maps `UniswapV2Factory` contracts to base tokens to `UniswapTwapPriceOracleV2` contract addresses.
-     */
-    mapping(address => mapping(address => UniswapTwapPriceOracleV2)) public oracles;
 }

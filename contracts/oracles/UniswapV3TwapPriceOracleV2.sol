@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
@@ -18,7 +19,7 @@ import "./BasePriceOracle.sol";
  * @notice Stores cumulative prices and returns TWAPs for assets on Uniswap V3 pairs.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract UniswapV3TwapPriceOracleV2 is BasePriceOracle {
+contract UniswapV3TwapPriceOracleV2 is Initializable, PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
@@ -34,17 +35,17 @@ contract UniswapV3TwapPriceOracleV2 is BasePriceOracle {
     /**
      * @dev IUniswapV3Factory contract address.
      */
-    address immutable public uniswapV3Factory;
+    address public uniswapV3Factory;
 
     /**
      * @dev Uniswap V3 fee tier.
      */
-    uint24 immutable public feeTier;
+    uint24 public feeTier;
 
     /**
      * @dev Base token (WETH by default).
      */
-    address immutable public baseToken;
+    address public baseToken;
     
     /**
      * @dev Returns the price in ETH of `underlying` given `factory`.
@@ -64,7 +65,7 @@ contract UniswapV3TwapPriceOracleV2 is BasePriceOracle {
     /**
      * @dev Constructor that sets the UniswapV3Factory and fee tier.
      */
-    constructor (address _uniswapV3Factory, uint24 _feeTier, address _baseToken) public {
+    function initialize(address _uniswapV3Factory, uint24 _feeTier, address _baseToken) external initializer {
         require(_uniswapV3Factory != address(0));
         require(_feeTier == 500 || _feeTier == 3000 || _feeTier == 10000);
         uniswapV3Factory = _uniswapV3Factory;
