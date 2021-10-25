@@ -21,11 +21,8 @@ module.exports = async function(deployer, network, accounts) {
     if (!process.env.UPGRADE_POOL_LENS_ADDRESS) return console.error("UPGRADE_POOL_LENS_ADDRESS is missing for upgrade");
     if (!process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS) return console.error("UPGRADE_FEE_DISTRIBUTOR_ADDRESS is missing for upgrade");
 
-    // Upgrade to v1.2.0
-    var fusePoolDirectory = await prepareUpgrade(process.env.UPGRADE_POOL_DIRECTORY_ADDRESS, FusePoolDirectory, { deployer });
+    // Upgrade to v1.2.1
     var fuseFeeDistributor = await prepareUpgrade(process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS, FuseFeeDistributor, { deployer });
-    var fusePoolLens = await deployProxy(FusePoolLens, [process.env.UPGRADE_POOL_DIRECTORY_ADDRESS], { deployer });
-    var fusePoolLensSecondary = await deployProxy(FusePoolLensSecondary, [process.env.UPGRADE_POOL_DIRECTORY_ADDRESS], { deployer });
   } else {
     // Deploy FusePoolDirectory
     var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
