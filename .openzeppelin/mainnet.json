@@ -724,6 +724,174 @@
           }
         }
       }
+    },
+    "83396e10185de6b8809eaa56a143b8fa0eecdd7ca518c7ea53c6045dc2fdd39a": {
+      "address": "0x50CE132eBe395d35b8CF6dF6CE5f817107707583",
+      "txHash": "0xc76809118c46bf5fb34e2f785424bc5c536f98fbc4b199d20dad30a9cc1bb678",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:20"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:74"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "defaultInterestFeeRate",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:35"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "minBorrowEth",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:67"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "maxSupplyEth",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:73"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "maxUtilizationRate",
+            "type": "t_uint256",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:79"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "comptrollerImplementationWhitelist",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:173"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "cErc20DelegateWhitelist",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bool,t_bool)))",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:189"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "cEtherDelegateWhitelist",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bool,t_bool)))",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:206"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "_latestComptrollerImplementation",
+            "type": "t_mapping(t_address,t_address)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:223"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "_latestCErc20Delegate",
+            "type": "t_mapping(t_address,t_struct(CDelegateUpgradeData)753_storage)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:250"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "_latestCEtherDelegate",
+            "type": "t_mapping(t_address,t_struct(CDelegateUpgradeData)753_storage)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:255"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "customInterestFeeRates",
+            "type": "t_mapping(t_address,t_int256)",
+            "src": "..\\..\\..\\..\\..\\..\\..\\C\\Users\\david\\Dropbox\\Rari\\v1\\fuse-contracts\\contracts\\FuseFeeDistributor.sol:301"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bool,t_bool)))": {
+            "label": "mapping(address => mapping(address => mapping(bool => bool)))"
+          },
+          "t_mapping(t_address,t_mapping(t_bool,t_bool))": {
+            "label": "mapping(address => mapping(bool => bool))"
+          },
+          "t_mapping(t_bool,t_bool)": {
+            "label": "mapping(bool => bool)"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)"
+          },
+          "t_mapping(t_address,t_struct(CDelegateUpgradeData)753_storage)": {
+            "label": "mapping(address => struct FuseFeeDistributor.CDelegateUpgradeData)"
+          },
+          "t_struct(CDelegateUpgradeData)753_storage": {
+            "label": "struct FuseFeeDistributor.CDelegateUpgradeData",
+            "members": [
+              {
+                "label": "implementation",
+                "type": "t_address"
+              },
+              {
+                "label": "allowResign",
+                "type": "t_bool"
+              },
+              {
+                "label": "becomeImplementationData",
+                "type": "t_bytes_storage"
+              }
+            ]
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_mapping(t_address,t_int256)": {
+            "label": "mapping(address => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
     }
   }
 }

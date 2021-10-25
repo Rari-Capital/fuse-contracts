@@ -115,9 +115,18 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < targets.length; i++) targets[i].functionCall(data);
     }
 
+    /**
+     * @dev Deploys a `CEtherDelegator`.
+     * @param constructorData `CEtherDelegator` ABI-encoded constructor data.
+     */
     function deployCEther(bytes calldata constructorData) external returns (address) {
+        // ABI decode constructor data
+        (address comptroller, , , , address implementation, , , ) = abi.decode(constructorData, (address, address, string, string, address, bytes, uint256, uint256));
+
+        // Check implementation whitelist
+        require(cEtherDelegateWhitelist[address(0)][implementation][false], "CEtherDelegate contract not whitelisted.");
+
         // Make sure comptroller == msg.sender
-        (address comptroller) = abi.decode(constructorData[0:32], (address));
         require(comptroller == msg.sender, "Comptroller is not sender.");
 
         // Deploy Unitroller using msg.sender, underlying, and block.number as a salt
@@ -136,9 +145,18 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         return proxy;
     }
 
+    /**
+     * @dev Deploys a `CErc20Delegator`.
+     * @param constructorData `CErc20Delegator` ABI-encoded constructor data.
+     */
     function deployCErc20(bytes calldata constructorData) external returns (address) {
+        // ABI decode constructor data
+        (address underlying, address comptroller, , , , address implementation, , , ) = abi.decode(constructorData, (address, address, address, string, string, address, bytes, uint256, uint256));
+
+        // Check implementation whitelist
+        require(cErc20DelegateWhitelist[address(0)][implementation][false], "CErc20Delegate contract not whitelisted.");
+
         // Make sure comptroller == msg.sender
-        (address underlying, address comptroller) = abi.decode(constructorData[0:64], (address, address));
         require(comptroller == msg.sender, "Comptroller is not sender.");
 
         // Deploy CErc20Delegator using msg.sender, underlying, and block.number as a salt
