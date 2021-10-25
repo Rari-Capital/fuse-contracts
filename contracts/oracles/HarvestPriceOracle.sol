@@ -21,16 +21,6 @@ contract HarvestPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @dev FARM ERC20 token contract.
-     */
-    address constant public FARM = 0xa0246c9032bC3A600820415aE600c6388619A14D;
-
-    /**
-     * @dev iFARM ERC20 token contract.
-     */
-    IFarmVault constant public IFARM = IFarmVault(0x1571eD0bed4D987fe2b498DdBaE7DFA19519F651);
-
-    /**
      * @notice Fetches the token/ETH price, with 18 decimals of precision.
      * @param underlying The underlying token address for which to get the price.
      * @return Price denominated in ETH (scaled by 1e18)
@@ -55,7 +45,7 @@ contract HarvestPriceOracle is PriceOracle, BasePriceOracle {
      * @notice Fetches the token/ETH price, with 18 decimals of precision.
      */
     function _price(address token) internal view returns (uint) {
-        if (token == address(IFARM)) return BasePriceOracle(msg.sender).price(FARM).mul(IFARM.getPricePerFullShare()).div(1e18);
-        else revert("Invalid token address passed to HarvestPriceOracle.");
+        IFarmVault vault = IFarmVault(token);
+        return BasePriceOracle(msg.sender).price(vault.underlying()).mul(vault.getPricePerFullShare()).div(1e18);
     }
 }
