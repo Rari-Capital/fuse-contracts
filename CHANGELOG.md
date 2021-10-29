@@ -1,5 +1,13 @@
 # Changelog
 
+## `v1.0.5` (contracts deployed; all code pushed)
+
+* Created `ChainlinkPriceOracleV2`.
+
+## `v1.0.4` (contracts deployed; all code pushed)
+
+* Fixed bug in `FuseSafeLiquidator`.
+
 ## `v1.0.3` (contracts deployed 2021-04-06; all code pushed 2021-04-17)
 
 * Created `UniswapTwapPriceOracle`.
