@@ -1,5 +1,22 @@
 # Changelog
 
+## `v1.1.2` (contracts deployed; all code pushed)
+
+* Created new oracles:
+    * `UniswapTwapPriceOracleV2`
+    * `UniswapV3TwapPriceOracleV2`
+    * `FixedTokenPriceOracle`
+    * `SushiBarPriceOracle`
+    * `WSTEthPriceOracle`
+* Created new liquidator collateral redemption strategies:
+    * `SOhmLiquidator`
+    * `SushiBarLiquidator`
+    * `WSTEthLiquidator`
+    * `UniswapV1Liquidator`
+    * `UniswapV2Liquidator`
+    * `UniswapV3Liquidator`
+* Improvements to `CustomLiquidator`.
+
 ## `v1.1.1` (contracts deployed; all code pushed)
 
 * Created `UniswapV3TwapPriceOracle`.
@@ -18,6 +35,7 @@
     * `FixedEthPriceOracle`
     * `FixedEurPriceOracle`
     * `AlphaHomoraV2PriceOracle`
+* Deleted `AlphaHomoraV2PriceOracle` due to risk of manipuation.
 * Created new liquidator collateral redemption strategies:
     * `CurveLpTokenLiquidator`
     * `CurveLiquidityGaugeV2Liquidator`

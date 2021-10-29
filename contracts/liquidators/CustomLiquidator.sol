@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 import "../external/aave/IWETH.sol";
@@ -13,6 +14,8 @@ import "./IRedemptionStrategy.sol";
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
 contract CustomLiquidator is IRedemptionStrategy {
+    using AddressUpgradeable for address;
+
     /**
      * @dev WETH contract object.
      */
@@ -31,7 +34,7 @@ contract CustomLiquidator is IRedemptionStrategy {
         address target;
         bytes memory data;
         (target, data, outputToken) = abi.decode(strategyData, (address, bytes, IERC20Upgradeable));
-        target.call(data);
+        target.functionCall(data);
         outputAmount = address(outputToken) == address(0) ? address(this).balance : outputToken.balanceOf(address(this));
 
         // Convert to WETH if ETH because `FuseSafeLiquidator.repayTokenFlashLoan` only supports tokens (not ETH) as output from redemptions (reverts on line 24 because `underlyingCollateral` is the zero address) 
