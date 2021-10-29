@@ -1,5 +1,9 @@
 # Changelog
 
+## `v1.1.1` (contracts deployed; all code pushed)
+
+* Created `UniswapV3TwapPriceOracle`.
+
 ## `v1.1.0` (contracts deployed; all code pushed)
 
 * New `FuseSafeLiquidator`:
