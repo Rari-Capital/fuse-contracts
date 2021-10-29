@@ -15,8 +15,7 @@ module.exports = async function(deployer, network, accounts) {
   }
 
   if (parseInt(process.env.UPGRADE_FROM_LAST_VERSION) > 0) {
-    // Upgrade from v1.0.5 (only modifying FuseSafeLiquidator v1.0.4) to v1.1.0
-    await deployer.deploy(FuseSafeLiquidator);
+    // TODO: Deploy `UniswapV3TwapPriceOracle`
   } else {
     // Deploy FusePoolDirectory
     var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
