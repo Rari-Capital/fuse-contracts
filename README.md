@@ -24,6 +24,8 @@ To install all our dependencies: `npm install`
 
 In `.env`, set `DEVELOPMENT_ADDRESS=0x45D54B22582c79c8Fb8f4c4F2663ef54944f397a` to test deployment and run automated tests.
 
+If you are upgrading from `v1.1.0`, set `UPGRADE_FROM_LAST_VERSION=1` to enable upgrading.
+
 To test the contracts, first fork the Ethereum mainnet. Begin by configuring `DEVELOPMENT_WEB3_PROVIDER_URL_TO_BE_FORKED` in `.env` (set to any mainnet Web3 HTTP provider JSON-RPC URL; we use a local `geth` instance, specifically a light client started with `geth --syncmode light --rpc --rpcapi eth,web3,debug,net`; Infura works too, but beware of latency and rate limiting). To start the fork, run `npm run ganache`. *If you would like to change the port, make sure to configure `scripts/ganache.js`, `scripts/test.sh`, and the `development` network in `truffle-config.js`.* Note that you will likely have to regularly restart your fork, especially when forking from a node without archive data or when using live 0x API responses to make currency exchanges.
 
 To deploy the contracts to your private mainnet fork: `truffle migrate --network development --skip-dry-run --reset`
@@ -33,6 +35,8 @@ To run automated tests on the contracts on your private mainnet fork, run `npm t
 ## Live deployment
 
 In `.env`, configure `LIVE_DEPLOYER_ADDRESS`, `LIVE_DEPLOYER_PRIVATE_KEY`, `LIVE_WEB3_PROVIDER_URL`, `LIVE_GAS_PRICE` (ideally, use the "fast" price listed by [ETH Gas Station](https://www.ethgasstation.info/)), and `LIVE_OWNER` to deploy to the mainnet.
+
+If you are upgrading from `v1.1.0`, set `UPGRADE_FROM_LAST_VERSION=1` to enable upgrading.
 
 Then, migrate: `truffle migrate --network live`
 
