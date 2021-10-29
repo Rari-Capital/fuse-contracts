@@ -48,8 +48,28 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 
 **v1.0.2** (Uniswap): `0xd6a8cac634e59c00a3d4163f839d068458e39869`
 
+### `UniswapTwapPriceOracle`
+
+`UniswapTwapPriceOracle` wraps the `UniswapTwapPriceOracleRoot` logic contract and contains all TWAP reading logic. Supports Uniswap/SushiSwap/etc.
+
+**v1.0.3** (Uniswap): `0xCd8f1c72Ff98bFE3B307869dDf66f5124D57D3a9`
+
+**v1.0.3** (SushiSwap): `0xfD4B4552c26CeBC54cD80B1BDABEE2AC3E7eB324`
+
+### `UniswapTwapPriceOracleRoot`
+
+`UniswapTwapPriceOracleRoot` sits at the root of the `UniswapTwapPriceOracle` wrapper contracts and contains all TWAP storage logic. Supports Uniswap/SushiSwap/etc.
+
+**v1.0.3**: `0xa170dba2cd1f68cdd7567cf70184d5492d2e8138`
+
 ### `MasterPriceOracle`
 
 `MasterPriceOracle` maps ERC20 tokens to specific underlying price oracle contracts.
 
 **v1.0.0**: `0x1887118E49e0F4A78Bd71B792a49dE03504A764D`
+
+## Older Versions
+
+### `FuseFeeDistributor`
+
+* **v1.0.0**: `0xa731585ab05fC9f83555cf9Bff8F58ee94e18F85`
