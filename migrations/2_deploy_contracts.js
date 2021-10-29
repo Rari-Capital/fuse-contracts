@@ -6,6 +6,7 @@ var FusePoolDirectory = artifacts.require("./FusePoolDirectory.sol");
 var FuseSafeLiquidator = artifacts.require("./FuseSafeLiquidator.sol");
 var FuseFeeDistributor = artifacts.require("./FuseFeeDistributor.sol");
 var FusePoolLens = artifacts.require("./FusePoolLens.sol");
+var Keep3rV2PriceOracle = artifacts.require("./oracles/Keep3rV2PriceOracle.sol");
 
 module.exports = async function(deployer, network, accounts) {
   // Validate .env
