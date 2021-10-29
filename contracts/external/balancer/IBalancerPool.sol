@@ -30,7 +30,7 @@ interface IBalancerPool {
     uint minPoolAmountOut
   ) external returns (uint poolAmountOut);
 
-  function exitPool(uint poolAmoutnIn, uint[] calldata minAmountsOut) external;
+  function exitPool(uint poolAmountIn, uint[] calldata minAmountsOut) external;
 
   function exitswapExternAmountOut(
     address tokenOut,

@@ -34,6 +34,12 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 
 **v1.0.0**: `0xe102421A85D9C0e71C0Ef1870DaC658EB43E1493`
 
+### `ChainlinkPriceOracleV2`
+
+`ChainlinkPriceOracle` reads prices from Chainlink feeds set by an admin.
+
+**v1.0.5**: `0xb0602af43Ca042550ca9DA3c33bA3aC375d20Df4`
+
 ### `Keep3rPriceOracle`
 
 `Keep3rPriceOracle` reads TWAPs from [`Keep3rV1Oracle`](https://etherscan.io/address/0x73353801921417f465377c8d898c6f4c0270282c) and [`SushiswapV1Oracle`](https://etherscan.io/address/0xf67Ab1c914deE06Ba0F264031885Ea7B276a7cDa#code).

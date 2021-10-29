@@ -1,5 +1,9 @@
 # Changelog
 
+## `v1.0.5` (contracts deployed; all code pushed)
+
+* Created `ChainlinkPriceOracleV2`.
+
 ## `v1.0.4` (contracts deployed; all code pushed)
 
 * Fixed bug in `FuseSafeLiquidator`.

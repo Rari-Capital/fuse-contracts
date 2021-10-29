@@ -1,10 +1,10 @@
 # Fuse by Rari Capital: Smart Contracts
 
-This repository contains the Solidity source code for the smart contracts behind Fuse's interest rate pool directory. See [here for the Rari dApp](https://github.com/Rari-Capital/rari-dapp) or [here for the Fuse SDK](https://github.com/Rari-Capital/rari-dApp/tree/master/src/fuse-sdk).
+This repository contains the Solidity source code for the smart contracts behind the pool deployer, directory, lens, liquidator, and oracles for Fuse's open ecosystem of interest rate pools, built on top of our fork of [`compound-protocol`](https://github.com/Rari-Capital/compound-protocol/tree/fuse-v1.0.1). See [here for the Rari dApp](https://github.com/Rari-Capital/rari-dapp) or [here for the Fuse SDK](https://github.com/Rari-Capital/rari-dApp/tree/master/src/fuse-sdk).
 
 ## How it works
 
-Fuse by Rari Capital is a decentralized interest rate pool creator, directory, and liquidator based on the Ethereum blockchain. A high-level overview of how Fuse works is available in [`CONCEPT.md`](CONCEPT.md). Find out more about Fuse and Rari Capital at [rari.capital](https://rari.capital).
+Fuse by Rari Capital is a decentralized ecosystem of interest rate pools based on the Ethereum blockchain. At the core of Fuse is our fork of [`compound-protocol`](https://github.com/Rari-Capital/compound-protocol/tree/fuse-v1.0.1), and on top of Fuse is `fuse-contracts`, containing our pool deployer, directory, lens, liquidator, and oracles. A high-level overview of how Fuse works is available in [`CONCEPT.md`](CONCEPT.md). Find out more about Fuse and Rari Capital at [rari.capital](https://rari.capital).
 
 ## Installation (for development and deployment)
 
