@@ -5,33 +5,61 @@ import "../external/compound/PriceOracle.sol";
 import "../external/compound/CToken.sol";
 import "../external/compound/CErc20.sol";
 
-import "./ChainlinkPriceOracle.sol";
+import "./BasePriceOracle.sol";
+import "./MasterPriceOracle.sol";
+import "./ChainlinkPriceOracleV2.sol";
 
 /**
  * @title PreferredPriceOracle
- * @notice Returns prices from Chainlink or prices from a secondary oracle if an asset's price is not available via Chainlink.
- * @dev Implements `PriceOracle`.
+ * @notice Returns prices from MasterPriceOracle, ChainlinkPriceOracleV2, or prices from a tertiary oracle (in order of preference).
+ * @dev Implements `PriceOracle` and `BasePriceOracle`.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract PreferredPriceOracle is PriceOracle {
+contract PreferredPriceOracle is PriceOracle, BasePriceOracle {
     /**
-     * @dev The primary `ChainlinkPriceOracle`.
+     * @dev The primary `MasterPriceOracle`.
      */
-    ChainlinkPriceOracle public chainlinkOracle;
+    MasterPriceOracle public masterOracle;
 
     /**
-     * @dev The secondary `PriceOracle`.
+     * @dev The secondary `ChainlinkPriceOracleV2`.
      */
-    PriceOracle public secondaryOracle;
+    ChainlinkPriceOracleV2 public chainlinkOracleV2;
+
+    /**
+     * @dev The tertiary `PriceOracle`.
+     */
+    PriceOracle public tertiaryOracle;
     
     /**
-     * @dev Constructor to set the primary `ChainlinkPriceOracle` and the secondary `PriceOracle`.
+     * @dev Constructor to set the primary `MasterPriceOracle`, the secondary `ChainlinkPriceOracleV2`, and the tertiary `PriceOracle`.
      */
-    constructor(ChainlinkPriceOracle _chainlinkOracle, PriceOracle _secondaryOracle) public {
-        require(address(_chainlinkOracle) != address(0), "ChainlinkPriceOracle not set.");
-        require(address(_secondaryOracle) != address(0), "Secondary price oracle not set.");
-        chainlinkOracle = _chainlinkOracle;
-        secondaryOracle = _secondaryOracle;
+    constructor(MasterPriceOracle _masterOracle, ChainlinkPriceOracleV2 _chainlinkOracleV2, PriceOracle _tertiaryOracle) public {
+        require(address(_masterOracle) != address(0), "MasterPriceOracle not set.");
+        require(address(_chainlinkOracleV2) != address(0), "ChainlinkPriceOracleV2 not set.");
+        require(address(_tertiaryOracle) != address(0), "Tertiary price oracle not set.");
+        masterOracle = _masterOracle;
+        chainlinkOracleV2 = _chainlinkOracleV2;
+        tertiaryOracle = _tertiaryOracle;
+    }
+
+    /**
+     * @notice Fetches the token/ETH price, with 18 decimals of precision.
+     * @param underlying The underlying token address for which to get the price.
+     * @return Price denominated in ETH (scaled by 1e18)
+     */
+    function price(address underlying) external override view returns (uint) {
+        // Return 1e18 for WETH
+        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+
+        // Try to get MasterPriceOracle price
+        if (address(masterOracle.oracles(underlying)) != address(0)) return masterOracle.price(underlying);
+
+        // Try to get ChainlinkPriceOracleV2 price
+        if (address(chainlinkOracleV2.priceFeeds(underlying)) != address(0)) return chainlinkOracleV2.price(underlying);
+
+        // Otherwise, get price from tertiary oracle
+        return BasePriceOracle(address(tertiaryOracle)).price(underlying);
     }
 
     /**
@@ -49,10 +77,13 @@ contract PreferredPriceOracle is PriceOracle {
         // Return 1e18 for WETH
         if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
 
-        // Try to get Chainlink price
-        if (chainlinkOracle.hasPriceFeed(underlying)) return chainlinkOracle.getUnderlyingPrice(cToken);
+        // Try to get MasterPriceOracle price
+        if (address(masterOracle.oracles(underlying)) != address(0)) return masterOracle.getUnderlyingPrice(cToken);
 
-        // Otherwise, get price from secondary oracle
-        return secondaryOracle.getUnderlyingPrice(cToken);
+        // Try to get ChainlinkPriceOracleV2 price
+        if (address(chainlinkOracleV2.priceFeeds(underlying)) != address(0)) return chainlinkOracleV2.getUnderlyingPrice(cToken);
+
+        // Otherwise, get price from tertiary oracle
+        return tertiaryOracle.getUnderlyingPrice(cToken);
     }
 }

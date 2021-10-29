@@ -1,5 +1,16 @@
 # Changelog
 
+## `v1.1.4` (contracts deployed; all code pushed)
+
+* Created new oracles:
+    * `HarvestPriceOracle`
+    * `BadgerPriceOracle`
+* Created new liquidator collateral redemption strategies:
+    * `HarvestLiquidator`
+    * `BadgerSettLiquidator`
+* Improvements to `PreferredPriceOracle`.
+* Return output/profit in FuseSafeLiquidator.
+
 ## `v1.1.3` (contracts deployed; all code pushed)
 
 * Minor fix to `UniswapTwapPriceOracleV2`.
