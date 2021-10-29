@@ -15,7 +15,7 @@ module.exports = async function(deployer, network, accounts) {
   }
 
   if (parseInt(process.env.UPGRADE_FROM_LAST_VERSION) > 0) {
-    // TODO: Deploy `UniswapV3TwapPriceOracle`
+    // TODO: Deploy new oracles and liquidators here
   } else {
     // Deploy FusePoolDirectory
     var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
