@@ -2,26 +2,29 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 import "../external/compound/PriceOracle.sol";
 import "../external/compound/CToken.sol";
 import "../external/compound/CErc20.sol";
 
-import "../external/alpha/Bank.sol";
+import "./BasePriceOracle.sol";
 
 /**
- * @title AlphaHomoraV1PriceOracle
- * @notice Returns prices the Alpha Homora V1 ibETH ERC20 token.
- * @dev Implements the `PriceOracle` interface.
+ * @title FixedEthPriceOracle
+ * @notice Returns fixed prices of 1 ETH for all tokens (expected to be used under a `MasterPriceOracle`).
+ * @dev Implements `PriceOracle` and `BasePriceOracle`.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract AlphaHomoraV1PriceOracle is PriceOracle {
+contract FixedEthPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @dev Alpha Homora ibETH token contract object.
+     * @dev Returns the price in ETH of `underlying` (implements `BasePriceOracle`).
      */
-    Bank constant public IBETH = Bank(0x67B66C99D3Eb37Fa76Aa3Ed1ff33E8e39F0b9c7A);
+    function price(address underlying) external override view returns (uint) {
+        return 1e18;
+    }
 
     /**
      * @notice Returns the price in ETH of the token underlying `cToken`.
@@ -29,7 +32,10 @@ contract AlphaHomoraV1PriceOracle is PriceOracle {
      * @return Price in ETH of the token underlying `cToken`, scaled by `10 ** (36 - underlyingDecimals)`.
      */
     function getUnderlyingPrice(CToken cToken) external override view returns (uint) {
-        require(CErc20(address(cToken)).underlying() == address(IBETH));
-        return IBETH.totalETH().mul(1e18).div(IBETH.totalSupply());
+        // Get underlying token address
+        address underlying = CErc20(address(cToken)).underlying();
+
+        // Format and return price
+        return uint256(1e36).div(10 ** uint256(ERC20Upgradeable(underlying).decimals()));
     }
 }

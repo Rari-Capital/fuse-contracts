@@ -47,7 +47,7 @@ contract MasterPriceOracle is PriceOracle, BasePriceOracle {
     }
 
     /**
-     * @dev Constructor to map RariFundTokens to RariFundManagers.
+     * @dev Sets `_oracles` for `underlyings`.
      */
     function add(address[] calldata underlyings, PriceOracle[] calldata _oracles) external onlyAdmin {
         // Input validation

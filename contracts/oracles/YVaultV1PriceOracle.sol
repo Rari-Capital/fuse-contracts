@@ -12,7 +12,7 @@ import "./BasePriceOracle.sol";
 
 /**
  * @title YVaultV1PriceOracle
- * @notice Returns prices for yVaults using the sender as a root oracle.
+ * @notice Returns prices for V1 yVaults (using the sender as a root oracle).
  * @dev Implements the `PriceOracle` interface.
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */

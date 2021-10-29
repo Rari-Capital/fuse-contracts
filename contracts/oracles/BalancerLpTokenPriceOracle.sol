@@ -19,7 +19,7 @@ import "./BasePriceOracle.sol";
  * @notice BalancerLpTokenPriceOracle is a price oracle for Balancer LP tokens.
  * @dev Implements the `PriceOracle` interface used by Fuse pools (and Compound v2).
  */
-contract BalancerLpTokenPriceOracle is PriceOracle, BNum {
+contract BalancerLpTokenPriceOracle is PriceOracle, BasePriceOracle, BNum {
     using SafeMathUpgradeable for uint256;
 
     /**
@@ -27,7 +27,7 @@ contract BalancerLpTokenPriceOracle is PriceOracle, BNum {
      * @param underlying The underlying token address for which to get the price (set to zero address for ETH).
      * @return Price denominated in ETH (scaled by 1e18).
      */
-    function price(address underlying) external view returns (uint) {
+    function price(address underlying) external override view returns (uint) {
         return _price(underlying);
     }
 

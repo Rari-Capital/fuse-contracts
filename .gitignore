@@ -7,6 +7,10 @@ node_modules
 # Truffle build directory
 build/
 
+# Hardhat
+cache/
+artifacts/
+
 # OpenZeppelin development artifacts
 .openzeppelin/*
 !.openzeppelin/mainnet.json

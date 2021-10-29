@@ -16,10 +16,10 @@ import "./BasePriceOracle.sol";
 /**
  * @title CurveLpTokenPriceOracle
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice CurveLpTokenPriceOracle is a price oracle for Curve LP tokens.
+ * @notice CurveLpTokenPriceOracle is a price oracle for Curve LP tokens (using the sender as a root oracle).
  * @dev Implements the `PriceOracle` interface used by Fuse pools (and Compound v2).
  */
-contract CurveLpTokenPriceOracle is PriceOracle {
+contract CurveLpTokenPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
@@ -27,7 +27,7 @@ contract CurveLpTokenPriceOracle is PriceOracle {
      * @param underlying The underlying token address for which to get the price (set to zero address for ETH).
      * @return Price denominated in ETH (scaled by 1e18).
      */
-    function price(address underlying) external view returns (uint) {
+    function price(address underlying) external override view returns (uint) {
         return _price(underlying);
     }
 
@@ -48,21 +48,21 @@ contract CurveLpTokenPriceOracle is PriceOracle {
      * Source: https://github.com/AlphaFinanceLab/homora-v2/blob/master/contracts/oracle/CurveOracle.sol
      * @param lpToken The LP token contract address for price retrieval.
      */
-    function _price(address lpToken) internal view virtual returns (uint) {
-      address pool = poolOf[lpToken];
-      require(pool != address(0), "LP token is not registered.");
-      address[] memory tokens = underlyingTokens[lpToken];
-      uint256 minPx = uint256(-1);
-      uint256 n = tokens.length;
+    function _price(address lpToken) internal view returns (uint) {
+        address pool = poolOf[lpToken];
+        require(pool != address(0), "LP token is not registered.");
+        address[] memory tokens = underlyingTokens[lpToken];
+        uint256 minPx = uint256(-1);
+        uint256 n = tokens.length;
 
-      for (uint256 i = 0; i < n; i++) {
-          address ulToken = tokens[i];
-          uint256 tokenPx = BasePriceOracle(msg.sender).price(ulToken);
-          if (tokenPx < minPx) minPx = tokenPx;
-      }
+        for (uint256 i = 0; i < n; i++) {
+            address ulToken = tokens[i];
+            uint256 tokenPx = BasePriceOracle(msg.sender).price(ulToken);
+            if (tokenPx < minPx) minPx = tokenPx;
+        }
 
-      require(minPx != uint256(-1), "No minimum underlying token price found.");      
-      return minPx.mul(ICurvePool(pool).get_virtual_price()).div(1e18); // Use min underlying token prices
+        require(minPx != uint256(-1), "No minimum underlying token price found.");      
+        return minPx.mul(ICurvePool(pool).get_virtual_price()).div(1e18); // Use min underlying token prices
     }
 
     /**

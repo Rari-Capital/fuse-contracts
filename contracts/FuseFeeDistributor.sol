@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
@@ -13,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
  * @notice FuseFeeDistributor controls and receives protocol fees from Fuse pools and relays admin actions to Fuse pools.
  */
 contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
+    using AddressUpgradeable for address;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
@@ -98,7 +100,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      */
     function _callPool(address[] calldata targets, bytes[] calldata data) external onlyOwner {
         require(targets.length > 0 && targets.length == data.length, "Array lengths must be equal and greater than 0.");
-        for (uint256 i = 0; i < targets.length; i++) targets[i].call(data[i]);
+        for (uint256 i = 0; i < targets.length; i++) targets[i].functionCall(data[i]);
     }
 
     /**
@@ -108,6 +110,6 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      */
     function _callPool(address[] calldata targets, bytes calldata data) external onlyOwner {
         require(targets.length > 0, "No target addresses specified.");
-        for (uint256 i = 0; i < targets.length; i++) targets[i].call(data);
+        for (uint256 i = 0; i < targets.length; i++) targets[i].functionCall(data);
     }
 }
