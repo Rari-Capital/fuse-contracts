@@ -1,5 +1,9 @@
 # Changelog
 
+## `v1.1.5` (contracts deployed; all code pushed)
+
+* Created `StakedSdtPriceOracle` and `StakedSdtLiquidator`.
+
 ## `v1.1.4` (contracts deployed; all code pushed)
 
 * Created new oracles:
