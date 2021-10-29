@@ -19,7 +19,7 @@ import "./oracles/MasterPriceOracle.sol";
 /**
  * @title FusePoolLens
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
- * @notice FusePoolLens is a lens for Fuse money market pools.
+ * @notice FusePoolLens returns data on Fuse interest rate pools in mass for viewing by dApps, bots, etc.
  */
 contract FusePoolLens is Initializable {
     using SafeMathUpgradeable for uint256;
@@ -117,7 +117,7 @@ contract FusePoolLens is Initializable {
     }
 
     /**
-     * @dev Struct for a Fuse money market pool asset.
+     * @dev Struct for a Fuse pool asset.
      */
     struct FusePoolAsset {
         address cToken;
@@ -265,7 +265,7 @@ contract FusePoolLens is Initializable {
     }
 
     /**
-     * @dev Struct for a Fuse money market pool user.
+     * @dev Struct for a Fuse pool user.
      */
     struct FusePoolUser {
         address account;

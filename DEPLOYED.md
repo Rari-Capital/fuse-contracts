@@ -14,7 +14,7 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 
 `FuseSafeLiquidator` safely liquidates unhealthy borrowers (with flashloan support).
 
-**v1.0.0**: `0xcc29fe6a0e090d464abb616e1ae4ceea415c140e`
+**v1.0.4**: `0x41C7F2D48bde2397dFf43DadA367d2BD3527452F`
 
 ### `FusePoolLens`
 
@@ -69,6 +69,10 @@ As follows are all deployments of our smart contracts on the Ethereum mainnet.
 **v1.0.0**: `0x1887118E49e0F4A78Bd71B792a49dE03504A764D`
 
 ## Older Versions
+
+### `FuseSafeLiquidator`
+
+* **v1.0.0**: `0xcc29fe6a0e090d464abb616e1ae4ceea415c140e`
 
 ### `FuseFeeDistributor`
 
