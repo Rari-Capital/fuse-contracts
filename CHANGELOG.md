@@ -1,5 +1,18 @@
 # Changelog
 
+## `v1.1.6` (contracts deployed; all code pushed)
+
+* Created new oracles:
+    * `ChainlinkPriceOracleV3`
+    * `GelatoGUniPriceOracle`
+    * `MStablePriceOracle`
+    * `TokemakPoolTAssetPriceOracle`
+* Created new liquidator collateral redemption strategies:
+    * `GelatoGUniLiquidator`
+    * `MStableLiquidator`
+    * `DolaStabilizerLiquidator`
+    * `CurveMetapoolLpTokenLiquidator`
+
 ## `v1.1.5` (contracts deployed; all code pushed)
 
 * Created `StakedSdtPriceOracle` and `StakedSdtLiquidator`.
