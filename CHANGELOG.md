@@ -1,5 +1,11 @@
 # Changelog
 
+## `v1.1.3` (contracts deployed; all code pushed)
+
+* Minor fix to `UniswapTwapPriceOracleV2`.
+* Fix QSP-1 on `ChainlinkPriceOracle` and `ChainlinkPriceOracleV2`.
+* Add `maxSecondsBeforePriceIsStale` to `FixedEurPriceOracle`.
+
 ## `v1.1.2` (contracts deployed; all code pushed)
 
 * Created new oracles:
@@ -35,7 +41,7 @@
     * `FixedEthPriceOracle`
     * `FixedEurPriceOracle`
     * `AlphaHomoraV2PriceOracle`
-* Deleted `AlphaHomoraV2PriceOracle` due to risk of manipuation.
+* Deleted `AlphaHomoraV1PriceOracle` due to risk of manipuation.
 * Created new liquidator collateral redemption strategies:
     * `CurveLpTokenLiquidator`
     * `CurveLiquidityGaugeV2Liquidator`

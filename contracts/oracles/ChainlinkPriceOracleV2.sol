@@ -127,17 +127,17 @@ contract ChainlinkPriceOracleV2 is PriceOracle, BasePriceOracle {
 
         if (baseCurrency == FeedBaseCurrency.ETH) {
             (, int256 tokenEthPrice, , , ) = feed.latestRoundData();
-            return tokenEthPrice >= 0 ? uint256(tokenEthPrice) : 0;
+            return tokenEthPrice >= 0 ? uint256(tokenEthPrice).mul(1e18).div(10 ** uint256(feed.decimals())) : 0;
         } else if (baseCurrency == FeedBaseCurrency.USD) {
             (, int256 ethUsdPrice, , , ) = ETH_USD_PRICE_FEED.latestRoundData();
             if (ethUsdPrice <= 0) return 0;
             (, int256 tokenUsdPrice, , , ) = feed.latestRoundData();
-            return tokenUsdPrice >= 0 ? uint256(tokenUsdPrice).mul(1e18).div(uint256(ethUsdPrice)) : 0;
+            return tokenUsdPrice >= 0 ? uint256(tokenUsdPrice).mul(1e26).div(10 ** uint256(feed.decimals())).div(uint256(ethUsdPrice)) : 0;
         } else if (baseCurrency == FeedBaseCurrency.BTC) {
             (, int256 btcEthPrice, , , ) = BTC_ETH_PRICE_FEED.latestRoundData();
             if (btcEthPrice <= 0) return 0;
             (, int256 tokenBtcPrice, , , ) = feed.latestRoundData();
-            return tokenBtcPrice >= 0 ? uint256(tokenBtcPrice).mul(uint256(btcEthPrice)).div(1e8) : 0;
+            return tokenBtcPrice >= 0 ? uint256(tokenBtcPrice).mul(uint256(btcEthPrice)).div(10 ** uint256(feed.decimals())) : 0;
         }
     }
 
