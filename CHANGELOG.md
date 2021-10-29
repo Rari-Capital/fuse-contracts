@@ -57,6 +57,10 @@
 
 ## `v1.1.0` (contracts deployed; all code pushed)
 
+* New `FuseSafeLiquidator`:
+    * Chain any combination of collateral redemption strategies.
+    * Use any `UniswapV2Router02` (i.e., Uniswap V2, SushiSwap).
+    * Enable flashbots with `ethToCoinbase` parameter.
 * Created new oracles:
     * `CurveLpTokenPriceOracle`
     * `CurveLiquidityGaugeV2PriceOracle`
@@ -64,11 +68,25 @@
     * `YearnYVaultV2PriceOracle`
     * `FixedEthPriceOracle`
     * `FixedEurPriceOracle`
+    * `AlphaHomoraV2PriceOracle`
+* Deleted `AlphaHomoraV1PriceOracle` due to risk of manipuation.
 * Created new liquidator collateral redemption strategies:
     * `CurveLpTokenLiquidator`
     * `CurveLiquidityGaugeV2Liquidator`
+    * `YearnYVaultV1Liquidator`
     * `YearnYVaultV2Liquidator`
+    * `UniswapLpTokenLiquidator`
     * `PoolTogetherLiquidator`
+    * `CurveSwapLiquidator`
+    * `BalancerPoolTokenLiquidator`
+    * `CErc20Liquidator`
+    * `CEtherLiquidator`
+    * `AlphaHomoraV2SafeBoxLiquidator`
+    * `AlphaHomoraV2SafeBoxETHLiquidator`
+    * `CustomLiquidator`
+    * `SynthetixSynthLiquidator`
+    * `AlphaHomoraV1BankLiquidator`
+* Confirm functions called in `FuseFeeDistributor._callPool` do not revert. 
 
 ## `v1.0.5` (contracts deployed; all code pushed)
 
