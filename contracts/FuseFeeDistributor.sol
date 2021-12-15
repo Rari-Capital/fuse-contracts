@@ -119,7 +119,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Deploys a `CEtherDelegator`.
      * @param constructorData `CEtherDelegator` ABI-encoded constructor data.
      */
-    function deployCEther(bytes calldata constructorData) external returns (address) {
+    function deployCEther(bytes calldata constructorData) external virtual returns (address) {
         // ABI decode constructor data
         (address comptroller, , , , address implementation, , , ) = abi.decode(constructorData, (address, address, string, string, address, bytes, uint256, uint256));
 
@@ -149,7 +149,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Deploys a `CErc20Delegator`.
      * @param constructorData `CErc20Delegator` ABI-encoded constructor data.
      */
-    function deployCErc20(bytes calldata constructorData) external returns (address) {
+    function deployCErc20(bytes calldata constructorData) external virtual returns (address) {
         // ABI decode constructor data
         (address underlying, address comptroller, , , , address implementation, , , ) = abi.decode(constructorData, (address, address, address, string, string, address, bytes, uint256, uint256));
 

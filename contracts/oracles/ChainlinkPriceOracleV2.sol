@@ -116,7 +116,7 @@ contract ChainlinkPriceOracleV2 is PriceOracle, BasePriceOracle {
     /**
      * @dev Internal function returning the price in ETH of `underlying`.
      */
-    function _price(address underlying) internal view returns (uint) {
+    function _price(address underlying) internal view virtual returns (uint) {
         // Return 1e18 for WETH
         if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
 

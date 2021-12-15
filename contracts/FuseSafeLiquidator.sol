@@ -226,22 +226,44 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
     /**
      * @dev WETH contract address.
      */
-    address constant private WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal WETH_ADDRESS;
 
     /**
      * @dev WETH contract object.
      */
-    IWETH constant private WETH = IWETH(WETH_ADDRESS);
+    IWETH internal WETH;
 
     /**
      * @dev UniswapV2Router02 contract address.
      */
-    address constant private UNISWAP_V2_ROUTER_02_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address internal UNISWAP_V2_ROUTER_02_ADDRESS;
 
     /**
      * @dev UniswapV2Router02 contract object.
      */
-    IUniswapV2Router02 constant private UNISWAP_V2_ROUTER_02 = IUniswapV2Router02(UNISWAP_V2_ROUTER_02_ADDRESS);
+    IUniswapV2Router02 internal UNISWAP_V2_ROUTER_02;
+
+    /**
+     * @dev WETH flashloan pair base token #1 (USDC on Ethereum, MIM on Arbitrum).
+     */
+    address internal WETH_FLASHLOAN_BASE_TOKEN_1;
+
+    /**
+     * @dev WETH flashloan pair base token #2 (WBTC on Ethereum, DPX on Arbitrum).
+     */
+    address internal WETH_FLASHLOAN_BASE_TOKEN_2;
+
+    /**
+     * @dev Constructor to set immutable variables.
+     */
+    constructor() public {
+        WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+        UNISWAP_V2_ROUTER_02_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D; // Uniswap V2 on Ethereum
+        UNISWAP_V2_ROUTER_02 = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        WETH_FLASHLOAN_BASE_TOKEN_1 = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC on Ethereum
+        WETH_FLASHLOAN_BASE_TOKEN_2 = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599; // WBTC on Ethereum
+    }
 
     /**
      * @dev Cached liquidator profit exchange source.
@@ -298,7 +320,7 @@ contract FuseSafeLiquidator is Initializable, IUniswapV2Callee {
         require(repayAmount > 0, "Repay amount must be greater than 0.");
 
         // Flashloan via Uniswap
-        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(UNISWAP_V2_ROUTER_02.factory(), address(uniswapV2RouterForCollateral) == UNISWAP_V2_ROUTER_02_ADDRESS && cErc20Collateral.underlying() == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 ? 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599 : 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, WETH_ADDRESS)); // Use USDC unless collateral is USDC, in which case we use WBTC to avoid a reentrancy error when exchanging the collateral to repay the borrow
+        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(UNISWAP_V2_ROUTER_02.factory(), address(uniswapV2RouterForCollateral) == UNISWAP_V2_ROUTER_02_ADDRESS && cErc20Collateral.underlying() == WETH_FLASHLOAN_BASE_TOKEN_1 ? WETH_FLASHLOAN_BASE_TOKEN_2 : WETH_FLASHLOAN_BASE_TOKEN_1, WETH_ADDRESS)); // Use USDC unless collateral is USDC, in which case we use WBTC to avoid a reentrancy error when exchanging the collateral to repay the borrow
         address token0 = pair.token0();
         pair.swap(token0 == WETH_ADDRESS ? repayAmount : 0, token0 != WETH_ADDRESS ? repayAmount : 0, address(this), msg.data);
 

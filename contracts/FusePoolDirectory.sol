@@ -113,7 +113,7 @@ contract FusePoolDirectory is OwnableUpgradeable {
      * @param priceOracle The pool's PriceOracle contract address.
      * @return The index of the registered Fuse pool and the Unitroller proxy address.
      */
-    function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 liquidationIncentive, address priceOracle) external returns (uint256, address) {
+    function deployPool(string memory name, address implementation, bool enforceWhitelist, uint256 closeFactor, uint256 liquidationIncentive, address priceOracle) external virtual returns (uint256, address) {
         // Input validation
         require(implementation != address(0), "No Comptroller implementation contract address specified.");
         require(priceOracle != address(0), "No PriceOracle contract address specified.");
