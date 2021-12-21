@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-const { deployProxy, upgradeProxy, prepareUpgrade, admin } = require('@openzeppelin/truffle-upgrades');
+const { deployProxy, admin } = require('@openzeppelin/truffle-upgrades');
 require('dotenv').config();
 
 var FusePoolDirectory = artifacts.require("./FusePoolDirectory.sol");
@@ -7,6 +7,9 @@ var FuseSafeLiquidator = artifacts.require("./FuseSafeLiquidator.sol");
 var FuseFeeDistributor = artifacts.require("./FuseFeeDistributor.sol");
 var FusePoolLens = artifacts.require("./FusePoolLens.sol");
 var FusePoolLensSecondary = artifacts.require("./FusePoolLensSecondary.sol");
+var FusePoolDirectoryArbitrum = artifacts.require("./FusePoolDirectoryArbitrum.sol");
+var FuseFeeDistributorArbitrum = artifacts.require("./FuseFeeDistributorArbitrum.sol");
+var FuseSafeLiquidatorArbitrum = artifacts.require("./FuseSafeLiquidatorArbitrum.sol");
 
 module.exports = async function(deployer, network, accounts) {
   // Validate .env
@@ -20,25 +23,22 @@ module.exports = async function(deployer, network, accounts) {
     if (!process.env.UPGRADE_POOL_DIRECTORY_ADDRESS) return console.error("UPGRADE_POOL_DIRECTORY_ADDRESS is missing for upgrade");
     if (!process.env.UPGRADE_POOL_LENS_ADDRESS) return console.error("UPGRADE_POOL_LENS_ADDRESS is missing for upgrade");
     if (!process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS) return console.error("UPGRADE_FEE_DISTRIBUTOR_ADDRESS is missing for upgrade");
-
-    // Upgrade to v1.2.1
-    var fuseFeeDistributor = await prepareUpgrade(process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS, FuseFeeDistributor, { deployer });
   } else {
     // Deploy FusePoolDirectory
-    var fusePoolDirectory = await deployProxy(FusePoolDirectory, [["live", "live-fork"].indexOf(network) >= 0, ["live", "live-fork"].indexOf(network) >= 0 ? [process.env.LIVE_OWNER] : []], { deployer, unsafeAllowCustomTypes: true });
+    var fusePoolDirectory = await deployProxy(["arbitrum", "arbitrum-fork", "arbitrum_rinkleby"].indexOf(network) >= 0 ? FusePoolDirectoryArbitrum : FusePoolDirectory, [false, []], { deployer, unsafeAllowCustomTypes: true });
     
     // Deploy FuseSafeLiquidator
-    await deployer.deploy(FuseSafeLiquidator);
+    await deployer.deploy(["arbitrum", "arbitrum-fork", "arbitrum_rinkleby"].indexOf(network) >= 0 ? FuseSafeLiquidatorArbitrum : FuseSafeLiquidator);
     
     // Deploy FuseFeeDistributor
-    var fuseFeeDistributor = await deployProxy(FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer });
+    var fuseFeeDistributor = await deployProxy(["arbitrum", "arbitrum-fork", "arbitrum_rinkleby"].indexOf(network) >= 0 ? FuseFeeDistributorArbitrum : FuseFeeDistributor, [web3.utils.toBN(10e16).toString()], { deployer });
     
     // Deploy FusePoolLens
-    await deployProxy(FusePoolLens, [FusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
-    await deployProxy(FusePoolLensSecondary, [FusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
+    await deployProxy(FusePoolLens, [fusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
+    await deployProxy(FusePoolLensSecondary, [fusePoolDirectory.address], { deployer, unsafeAllowCustomTypes: true });
 
     // Set pool limits
-    await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(1e18), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1));
+    await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(0.001e18), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1));
 
     // Live network: transfer ownership of deployed contracts from the deployer to the owner
     if (["live", "live-fork"].indexOf(network) >= 0) {
