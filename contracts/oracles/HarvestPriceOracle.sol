@@ -46,6 +46,6 @@ contract HarvestPriceOracle is PriceOracle, BasePriceOracle {
      */
     function _price(address token) internal view returns (uint) {
         IFarmVault vault = IFarmVault(token);
-        return BasePriceOracle(msg.sender).price(vault.underlying()).mul(vault.getPricePerFullShare()).div(1e18);
+        return BasePriceOracle(msg.sender).price(vault.underlying()).mul(vault.getPricePerFullShare()).div(10 ** uint256(ERC20Upgradeable(token).decimals()));
     }
 }
