@@ -20,7 +20,7 @@ contract ChainlinkPriceOracleV2Arbitrum is ChainlinkPriceOracleV2 {
     /**
      * @dev Chainlink Flags contract.
      */
-    FlagsInterface constant public CHAINLINK_FLAGS = FlagsInterface(0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b);
+    FlagsInterface constant public CHAINLINK_FLAGS = FlagsInterface(0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83);
     
     /**
      * @dev Constructor to set admin and canAdminOverwrite.
