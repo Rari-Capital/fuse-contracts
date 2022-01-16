@@ -24,13 +24,17 @@ module.exports = async function(deployer, network, accounts) {
   var uniswapV3TwapPriceOracleV2 = await deployer.deploy(UniswapV3TwapPriceOracleV2);
   await deployer.deploy(UniswapV3TwapPriceOracleV2Factory, UniswapV3TwapPriceOracleV2.address);
 
+  // Prepare default MPO constructor args
+  var defaultMpoUnderlyings = [];
+  var defaultMpoOracles = [];
+
   // Arbitrum only
   if (["arbitrum", "arbitrum-fork", "arbitrum_rinkleby"].indexOf(network) >= 0) {
     // Deploy ChainlinkPriceOracleV2Arbitrum
-    var cpo = await deployer.deploy(ChainlinkPriceOracleV2Arbitrum, process.env.LIVE_DEPLOYER_ADDRESS, true);
+    var chainlinkPriceOracleV2 = await deployer.deploy(ChainlinkPriceOracleV2Arbitrum, process.env.LIVE_DEPLOYER_ADDRESS, true);
 
     // Set WBTC to BTC/ETH feed
-    await cpo.setPriceFeeds(
+    await chainlinkPriceOracleV2.setPriceFeeds(
       [
         "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f", // WBTC
       ],
@@ -41,7 +45,7 @@ module.exports = async function(deployer, network, accounts) {
     );
 
     // Set USD-based feeds
-    await cpo.setPriceFeeds(
+    await chainlinkPriceOracleV2.setPriceFeeds(
       [
         "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1", // DAI
         "0x69eb4fa4a2fbd498c257c57ea8b7655a2559a581", // DODO
@@ -74,25 +78,48 @@ module.exports = async function(deployer, network, accounts) {
     );
 
     // Deploy official Rari DAO MasterPriceOracle
-    var mpo = await initializableClones.clone(MasterPriceOracle.address, web3.eth.abi.encodeFunctionSignature("initialize(address[],address[],address,address,bool)") + web3.eth.abi.encodeParameters(["address[]", "address[]", "address", "address", "bool"], [
-      [
-        "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f", // WBTC
-        "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1", // DAI
-        "0x69eb4fa4a2fbd498c257c57ea8b7655a2559a581", // DODO
-        "0x17fc002b466eec40dae837fc4be5c67993ddbd6f", // FRAX
-        "0xf97f4df75117a78c1a5a0dbb814af92458539fb4", // LINK
-        "0xfea7a6a0b346362bf88a9e4a88416b77a57d6c2a", // MIM
-        "0x3e6648c5a70a150a88bce65f4ad4d506fe15d2af", // SPELL
-        "0xd4d42f0b6def4ce0383636770ef773390d85c61a", // SUSHI
-        "0xfa7f8980b0f1e64a2062791cc3b0871572f1f7f0", // UNI
-        "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8", // USDC
-        "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT
-        "0x82e3a8f066a6989666b031d916c43672085b1582", // YFI
-      ],
-      Array(12).fill(ChainlinkPriceOracleV2Arbitrum.address),
-      "0x0000000000000000000000000000000000000000",
-      process.env.LIVE_DEPLOYER_ADDRESS,
-      true
-    ]).substring(2));
+    defaultMpoUnderlyings = [
+      "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f", // WBTC
+      "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1", // DAI
+      "0x69eb4fa4a2fbd498c257c57ea8b7655a2559a581", // DODO
+      "0x17fc002b466eec40dae837fc4be5c67993ddbd6f", // FRAX
+      "0xf97f4df75117a78c1a5a0dbb814af92458539fb4", // LINK
+      "0xfea7a6a0b346362bf88a9e4a88416b77a57d6c2a", // MIM
+      "0x3e6648c5a70a150a88bce65f4ad4d506fe15d2af", // SPELL
+      "0xd4d42f0b6def4ce0383636770ef773390d85c61a", // SUSHI
+      "0xfa7f8980b0f1e64a2062791cc3b0871572f1f7f0", // UNI
+      "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8", // USDC
+      "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT
+      "0x82e3a8f066a6989666b031d916c43672085b1582", // YFI
+    ];
+    defaultMpoOracles = Array(12).fill(ChainlinkPriceOracleV2Arbitrum.address);
+  } else {
+    // Deploy ChainlinkPriceOracleV2
+    var chainlinkPriceOracleV2 = await deployer.deploy(ChainlinkPriceOracleV2, process.env.LIVE_DEPLOYER_ADDRESS, true);
+
+    // Deploy ChainlinkPriceOracleV3
+    var chainlinkPriceOracleV3 = await deployer.deploy(ChainlinkPriceOracleV3, process.env.LIVE_DEPLOYER_ADDRESS, true);
+  }
+
+  // Deploy official Rari DAO MasterPriceOracle
+  var sentTx = await initializableClones.clone(MasterPriceOracle.address, web3.eth.abi.encodeFunctionSignature("initialize(address[],address[],address,address,bool)") + web3.eth.abi.encodeParameters(["address[]", "address[]", "address", "address", "bool"], [
+    defaultMpoUnderlyings,
+    defaultMpoOracles,
+    "0x0000000000000000000000000000000000000000",
+    process.env.LIVE_DEPLOYER_ADDRESS,
+    true
+  ]).substring(2));
+
+  // Get deployed MPO from receipt
+  var defaultMasterPriceOracle;
+  for (const log of sentTx.logs)
+    if (log.address.toLowerCase() === initializableClones.address.toLowerCase() && log.event == "Deployed")
+      defaultMasterPriceOracle = await MasterPriceOracle.at(log.args.instance);
+  console.log("Default MasterPriceOracle:", defaultMasterPriceOracle.address);
+
+  // Live network: transfer ownership of deployed contracts from the deployer to the owner
+  if (["live", "live-fork"].indexOf(network) >= 0 && process.env.LIVE_OWNER && process.env.LIVE_DEPLOYER_ADDRESS.toLowerCase() !== process.env.LIVE_OWNER.toLowerCase()) {
+    await chainlinkPriceOracleV2.changeAdmin(process.env.LIVE_OWNER);
+    await defaultMasterPriceOracle.changeAdmin(process.env.LIVE_OWNER);
   }
 };

@@ -41,7 +41,7 @@ module.exports = async function(deployer, network, accounts) {
     await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(0.001e18), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1));
 
     // Live network: transfer ownership of deployed contracts from the deployer to the owner
-    if (["live", "live-fork"].indexOf(network) >= 0) {
+    if (["live", "live-fork"].indexOf(network) >= 0 && process.env.LIVE_OWNER && process.env.LIVE_DEPLOYER_ADDRESS.toLowerCase() !== process.env.LIVE_OWNER.toLowerCase()) {
       await fusePoolDirectory.transferOwnership(process.env.LIVE_OWNER);
       await fuseFeeDistributor.transferOwnership(process.env.LIVE_OWNER);
       await admin.transferProxyAdminOwnership(process.env.LIVE_OWNER);
