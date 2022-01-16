@@ -25,7 +25,10 @@ contract ChainlinkPriceOracleV2Arbitrum is ChainlinkPriceOracleV2 {
     /**
      * @dev Constructor to set admin and canAdminOverwrite.
      */
-    constructor (address _admin, bool _canAdminOverwrite) public ChainlinkPriceOracleV2(_admin, _canAdminOverwrite) { }
+    constructor (address _admin, bool _canAdminOverwrite) public ChainlinkPriceOracleV2(_admin, _canAdminOverwrite) {
+        ETH_USD_PRICE_FEED = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);
+        BTC_ETH_PRICE_FEED = AggregatorV3Interface(0xc5a90A6d7e4Af242dA238FFe279e9f2BA0c64B2e);
+    }
 
     /**
      * @dev Internal function returning the price in ETH of `underlying`.
