@@ -1,0 +1,405 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0x33F738c401F864C26fEe2fD0f6AD66f6c294982A",
+    "txHash": "0xc9129e9fdb94986a69777f7b13537b41e0befe7ebd01e4c9f6015560b2b189c0"
+  },
+  "proxies": [
+    {
+      "address": "0x4AFB2B3DC111D091ca6C46C024d1d2f17BF477e1",
+      "txHash": "0x400a89a9d207692f2c79ad60c1ac19f6030bd15e830ca5def5328255d30b5e6f",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xD6e194aF3d9674b62D1b30Ec676030C23961275e",
+      "txHash": "0xe7e2994d5462473ca0e7139db892b6cdc2470ca4774a37d4e5418c7c8df38f59",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x32ca4E5D75ECb06f33846055652C831f6E7a6924",
+      "txHash": "0xd8cda0b8d2c88a44ee0b28e460e75442d6f7deb7daad2b0a9676f7f8451faea0",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "74766e586bb586d1d873a019e8c9b97290722328be75737fa5aab25336ed52af": {
+      "address": "0x7C99aE5A1e01a8942575C906A3abbcf7f2FA3F0c",
+      "txHash": "0x07aa21a9b580ba32c3bb404ded618c7995e6a82931f7174ea1c8a42cd01b8006",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:20"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:74"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "pools",
+            "type": "t_array(t_struct(FusePool)4441_storage)dyn_storage",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:43"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "_poolsByAccount",
+            "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:48"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "poolExists",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:53"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "enforceDeployerWhitelist",
+            "type": "t_bool",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:63"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "deployerWhitelist",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:68"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "_bookmarks",
+            "type": "t_mapping(t_address,t_array(t_address)dyn_storage)",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:216"
+          },
+          {
+            "contract": "FusePoolDirectory",
+            "label": "adminWhitelist",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "..\\project:\\contracts\\FusePoolDirectory.sol:244"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(FusePool)4441_storage)dyn_storage": {
+            "label": "struct FusePoolDirectory.FusePool[]"
+          },
+          "t_struct(FusePool)4441_storage": {
+            "label": "struct FusePoolDirectory.FusePool",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "creator",
+                "type": "t_address"
+              },
+              {
+                "label": "comptroller",
+                "type": "t_address"
+              },
+              {
+                "label": "blockPosted",
+                "type": "t_uint256"
+              },
+              {
+                "label": "timestampPosted",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+            "label": "mapping(address => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "b9e9ad116d6b2e20d9383226faf95ef192295adc5d80016a656327dbfd802efc": {
+      "address": "0xD9F223A36C2e398B0886F945a7e556B41EF91A3C",
+      "txHash": "0x620a0a6e267b302d683e7dc6095f41494fd45279f66a46e0469e8ef17c5e8a62",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:31"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:20"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:74"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "defaultInterestFeeRate",
+            "type": "t_uint256",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:35"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "minBorrowEth",
+            "type": "t_uint256",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:67"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "maxSupplyEth",
+            "type": "t_uint256",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:73"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "maxUtilizationRate",
+            "type": "t_uint256",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:79"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "comptrollerImplementationWhitelist",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:181"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "cErc20DelegateWhitelist",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bool,t_bool)))",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:197"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "cEtherDelegateWhitelist",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bool,t_bool)))",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:214"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "_latestComptrollerImplementation",
+            "type": "t_mapping(t_address,t_address)",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:231"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "_latestCErc20Delegate",
+            "type": "t_mapping(t_address,t_struct(CDelegateUpgradeData)4145_storage)",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:258"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "_latestCEtherDelegate",
+            "type": "t_mapping(t_address,t_struct(CDelegateUpgradeData)4145_storage)",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:263"
+          },
+          {
+            "contract": "FuseFeeDistributor",
+            "label": "customInterestFeeRates",
+            "type": "t_mapping(t_address,t_int256)",
+            "src": "..\\project:\\contracts\\FuseFeeDistributor.sol:309"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bool,t_bool)))": {
+            "label": "mapping(address => mapping(address => mapping(bool => bool)))"
+          },
+          "t_mapping(t_address,t_mapping(t_bool,t_bool))": {
+            "label": "mapping(address => mapping(bool => bool))"
+          },
+          "t_mapping(t_bool,t_bool)": {
+            "label": "mapping(bool => bool)"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)"
+          },
+          "t_mapping(t_address,t_struct(CDelegateUpgradeData)4145_storage)": {
+            "label": "mapping(address => struct FuseFeeDistributor.CDelegateUpgradeData)"
+          },
+          "t_struct(CDelegateUpgradeData)4145_storage": {
+            "label": "struct FuseFeeDistributor.CDelegateUpgradeData",
+            "members": [
+              {
+                "label": "implementation",
+                "type": "t_address"
+              },
+              {
+                "label": "allowResign",
+                "type": "t_bool"
+              },
+              {
+                "label": "becomeImplementationData",
+                "type": "t_bytes_storage"
+              }
+            ]
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_mapping(t_address,t_int256)": {
+            "label": "mapping(address => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "16e1a1bb88af4ea9d38a948cc92e27b1d8980748338956686b8894952b53b47b": {
+      "address": "0xeC55723f3d3242038F33B85796a82f25A8b67cAE",
+      "txHash": "0x5ca4b3f13a2a68f8c5771e4a866381f075a21641e56cb57e3bc68faef2e521cf",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "FusePoolLens",
+            "label": "directory",
+            "type": "t_contract(FusePoolDirectory)5313",
+            "src": "..\\project:\\contracts\\FusePoolLens.sol:39"
+          }
+        ],
+        "types": {
+          "t_contract(FusePoolDirectory)5313": {
+            "label": "contract FusePoolDirectory"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    },
+    "5d256c77f9b74c5a9d986144c38b97c398397bc38a6a15d0478ea4d23601f3e8": {
+      "address": "0x25bcDe64c514191696e5B701480dFB30A2569236",
+      "txHash": "0x80882547d7cb38bdbcef5d7e184d399aef0b1f17177fc440cdc64d5ecfa84ab8",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "..\\@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "FusePoolLensSecondary",
+            "label": "directory",
+            "type": "t_contract(FusePoolDirectory)5313",
+            "src": "..\\project:\\contracts\\FusePoolLensSecondary.sol:39"
+          }
+        ],
+        "types": {
+          "t_contract(FusePoolDirectory)5313": {
+            "label": "contract FusePoolDirectory"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    }
+  }
+}

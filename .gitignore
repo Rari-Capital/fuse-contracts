@@ -14,3 +14,4 @@ artifacts/
 # OpenZeppelin development artifacts
 .openzeppelin/*
 !.openzeppelin/mainnet.json
+!.openzeppelin/unknown-42161.json
