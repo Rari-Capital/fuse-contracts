@@ -136,8 +136,8 @@ contract MasterPriceOracle is Initializable, PriceOracle, BasePriceOracle {
         // Get underlying ERC20 token address
         address underlying = address(CErc20(address(cToken)).underlying());
 
-        // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
+        // Return 1e18 for ETH
+        if (underlying == address(0)) return 1e18;
 
         // Get underlying price from assigned oracle
         PriceOracle oracle = oracles[underlying];
@@ -150,9 +150,6 @@ contract MasterPriceOracle is Initializable, PriceOracle, BasePriceOracle {
      * @dev Attempts to return the price in ETH of `underlying` (implements `BasePriceOracle`).
      */
     function price(address underlying) external override view returns (uint) {
-        // Return 1e18 for WETH
-        if (underlying == 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2) return 1e18;
-
         // Get underlying price from assigned oracle
         PriceOracle oracle = oracles[underlying];
         if (address(oracle) != address(0)) return BasePriceOracle(address(oracle)).price(underlying);
