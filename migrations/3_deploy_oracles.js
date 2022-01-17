@@ -9,6 +9,7 @@ var UniswapV3TwapPriceOracleV2Factory = artifacts.require("./UniswapV3TwapPriceO
 var UniswapTwapPriceOracleV2 = artifacts.require("./UniswapTwapPriceOracleV2.sol");
 var UniswapTwapPriceOracleV2Root = artifacts.require("./UniswapTwapPriceOracleV2Root.sol");
 var UniswapTwapPriceOracleV2Factory = artifacts.require("./UniswapTwapPriceOracleV2Factory.sol");
+var FixedEthPriceOracle = artifacts.require("./FixedEthPriceOracle.sol");
 
 module.exports = async function(deployer, network, accounts) {
   // Deploy MasterPriceOracle implementation and InitializableClones
@@ -77,8 +78,12 @@ module.exports = async function(deployer, network, accounts) {
       1
     );
 
+    // Deploy FixedEthPriceOracle for WETH
+    var fixedEthPriceOracle = await deployer.deploy(FixedEthPriceOracle);
+
     // Deploy official Rari DAO MasterPriceOracle
     defaultMpoUnderlyings = [
+      "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH
       "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f", // WBTC
       "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1", // DAI
       "0x69eb4fa4a2fbd498c257c57ea8b7655a2559a581", // DODO
@@ -92,7 +97,7 @@ module.exports = async function(deployer, network, accounts) {
       "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT
       "0x82e3a8f066a6989666b031d916c43672085b1582", // YFI
     ];
-    defaultMpoOracles = Array(12).fill(ChainlinkPriceOracleV2Arbitrum.address);
+    defaultMpoOracles = [FixedEthPriceOracle.address].concat(Array(12).fill(ChainlinkPriceOracleV2Arbitrum.address));
   } else {
     // Deploy ChainlinkPriceOracleV2
     var chainlinkPriceOracleV2 = await deployer.deploy(ChainlinkPriceOracleV2, process.env.LIVE_DEPLOYER_ADDRESS, true);
