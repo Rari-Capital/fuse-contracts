@@ -50,6 +50,7 @@ module.exports = async function(deployer, network, accounts) {
       [
         "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1", // DAI
         "0x69eb4fa4a2fbd498c257c57ea8b7655a2559a581", // DODO
+        "0x4a717522566c7a09fd2774ccedc5a8c43c5f9fd2", // FEI
         "0x17fc002b466eec40dae837fc4be5c67993ddbd6f", // FRAX
         "0xf97f4df75117a78c1a5a0dbb814af92458539fb4", // LINK
         "0xfea7a6a0b346362bf88a9e4a88416b77a57d6c2a", // MIM
@@ -65,6 +66,7 @@ module.exports = async function(deployer, network, accounts) {
         // "0xaD1d5344AaDE45F43E596773Bcc4c423EAbdD034", // AAVE / USD
         "0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB", // DAI / USD
         "0xA33a06c119EC08F92735F9ccA37e07Af08C4f281", // DODO / USD
+        "0x7c4720086E6feb755dab542c46DE4f728E88304d", // FEI / USD
         "0x0809E3d38d1B4214958faf06D8b1B1a2b73f2ab8", // FRAX / USD
         "0x86E53CF1B870786351Da77A57575e79CB55812CB", // LINK / USD
         "0x87121F6c9A9F6E90E59591E4Cf4804873f54A95b", // MIM / USD
@@ -89,6 +91,7 @@ module.exports = async function(deployer, network, accounts) {
       "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f", // WBTC
       "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1", // DAI
       "0x69eb4fa4a2fbd498c257c57ea8b7655a2559a581", // DODO
+      "0x4a717522566c7a09fd2774ccedc5a8c43c5f9fd2", // FEI
       "0x17fc002b466eec40dae837fc4be5c67993ddbd6f", // FRAX
       "0xf97f4df75117a78c1a5a0dbb814af92458539fb4", // LINK
       "0xfea7a6a0b346362bf88a9e4a88416b77a57d6c2a", // MIM
@@ -100,7 +103,7 @@ module.exports = async function(deployer, network, accounts) {
       "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT
       "0x82e3a8f066a6989666b031d916c43672085b1582", // YFI
     ];
-    defaultMpoOracles = [FixedEthPriceOracle.address].concat(Array(13).fill(ChainlinkPriceOracleV2Arbitrum.address));
+    defaultMpoOracles = [FixedEthPriceOracle.address].concat(Array(14).fill(ChainlinkPriceOracleV2Arbitrum.address));
   } else {
     // Deploy ChainlinkPriceOracleV2
     var chainlinkPriceOracleV2 = await deployer.deploy(ChainlinkPriceOracleV2, process.env.LIVE_DEPLOYER_ADDRESS, true);
