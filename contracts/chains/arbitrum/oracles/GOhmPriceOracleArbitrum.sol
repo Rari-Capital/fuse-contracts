@@ -61,7 +61,8 @@ contract GOhmPriceOracleArbitrum is PriceOracle, BasePriceOracle {
      */
     function _price(address token) internal view returns (uint) {
         require(token == address(GOHM), "Invalid token passed to GOhmPriceOracle.");
-        (, int256 OHM_INDEX, , , ) = OHM_INDEX_PRICE_FEED.latestRoundData();
-        return uint256(OHM_INDEX).mul(BasePriceOracle(msg.sender).price(OHM)).div(1e9); // 1e9 = OHM base unit and therefore also gOHM/OHM index base unit
+        (uint80 roundId, int256 ohmIndex, , , uint80 answeredInRound) = OHM_INDEX_PRICE_FEED.latestRoundData();
+        require(answeredInRound == roundId, "Chainlink round timed out.");
+        return uint256(ohmIndex).mul(BasePriceOracle(msg.sender).price(OHM)).div(1e9); // 1e9 = OHM base unit and therefore also gOHM/OHM index base unit
     }
 }
