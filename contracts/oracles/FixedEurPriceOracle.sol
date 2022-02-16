@@ -22,18 +22,6 @@ contract FixedEurPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @notice The maxmimum number of seconds elapsed since the round was last updated before the price is considered stale. If set to 0, no limit is enforced.
-     */
-    uint256 public maxSecondsBeforePriceIsStale;
-    
-    /**
-     * @dev Constructor to set `maxSecondsBeforePriceIsStale`.
-     */
-    constructor(uint256 _maxSecondsBeforePriceIsStale) public {
-        maxSecondsBeforePriceIsStale = _maxSecondsBeforePriceIsStale;
-    }
-
-    /**
      * @notice Chainlink ETH/USD price feed contracts.
      */
     AggregatorV3Interface public constant ETH_USD_PRICE_FEED = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
@@ -48,14 +36,14 @@ contract FixedEurPriceOracle is PriceOracle, BasePriceOracle {
      */
     function _price(address underlying) internal view returns (uint) {
         // Get ETH/USD price from Chainlink
-        (, int256 ethUsdPrice, , uint256 updatedAt, ) = ETH_USD_PRICE_FEED.latestRoundData();
-        if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "ETH/USD Chainlink price is stale.");
+        (uint80 roundId, int256 ethUsdPrice, , , uint80 answeredInRound) = ETH_USD_PRICE_FEED.latestRoundData();
+        require(answeredInRound == roundId, "Chainlink round timed out.");
         if (ethUsdPrice <= 0) return 0;
 
         // Get EUR/USD price from Chainlink
         int256 eurUsdPrice;
-        (, eurUsdPrice, , updatedAt, ) = EUR_USD_PRICE_FEED.latestRoundData();
-        if (maxSecondsBeforePriceIsStale > 0) require(block.timestamp <= updatedAt + maxSecondsBeforePriceIsStale, "EUR/USD Chainlink price is stale.");
+        (roundId, eurUsdPrice, , , answeredInRound) = EUR_USD_PRICE_FEED.latestRoundData();
+        require(answeredInRound == roundId, "Chainlink round timed out.");
         if (eurUsdPrice <= 0) return 0;
 
         // Return EUR/ETH price = EUR/USD price / ETH/USD price
