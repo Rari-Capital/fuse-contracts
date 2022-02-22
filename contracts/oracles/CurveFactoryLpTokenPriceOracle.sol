@@ -86,6 +86,7 @@ contract CurveFactoryLpTokenPriceOracle is PriceOracle, BasePriceOracle {
      */
     function registerPool(address pool) external {
         uint n = registry.get_n_coins(pool);
+        if (n == 0) (n, ) = registry.get_meta_n_coins(pool);
         require(n != 0, "n");
         address[4] memory tokens = registry.get_coins(pool);
         for (uint256 i = 0; i < n; i++) underlyingTokens[pool].push(tokens[i]);
