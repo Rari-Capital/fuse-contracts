@@ -4,36 +4,41 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-import "../../../external/compound/PriceOracle.sol";
-import "../../../external/compound/CErc20.sol";
+import "../external/compound/PriceOracle.sol";
+import "../external/compound/CErc20.sol";
 
-import "../../../external/risedle/IRiseTokenVault.sol";
+import "../external/balancer/IStablePool.sol";
 
-import "../../../oracles/BasePriceOracle.sol";
+import "./BasePriceOracle.sol";
 
 /**
- * @title EthRisePriceOracle
- * @notice Returns prices for Risedle's ETHRISE token based on the getNAV() vault function.
+ * @title BalancerStableLpTokenPriceOracle
+ * @notice Returns prices for stable pool Balancer Lp tokens with more than 2 assets.
  * @dev Implements `PriceOracle` and `BasePriceOracle`.
- * @author sri yantra <sriyantra@rari.capital> (https://github.com/sriyantra)
+ * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
  */
-contract EthRisePriceOracle is PriceOracle, BasePriceOracle {
+contract BalancerStableLpTokenPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @notice Risedle Vault
+     * @dev bbaUSD BPT token contract.
      */
-    IRiseTokenVault public rVault = IRiseTokenVault(0xf7EDB240DbF7BBED7D321776AFe87D1FBcFD0A94);
-    
-    /**
-     * @notice ETHRISE address
-     */
-     address public ETHRISE = 0x46D06cf8052eA6FdbF71736AF33eD23686eA1452;
+    IStablePool constant public bbaUSD = IStablePool(0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2);
 
     /**
-     * @notice USDC address
+     * @dev WBTC/renBTC/sBTC BPT token contract.
      */
-    address public USDC = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    IStablePool constant public staBTC = IStablePool(0xFeadd389a5c427952D8fdb8057D6C8ba1156cC56);
+
+    /**
+     * @dev WBTC ERC20 token contract.
+     */
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+
+    /**
+     * @dev DAI ERC20 token contract.
+     */
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     /**
      * @notice Fetches the token/ETH price, with 18 decimals of precision.
@@ -60,7 +65,10 @@ contract EthRisePriceOracle is PriceOracle, BasePriceOracle {
      * @notice Fetches the token/ETH price, with 18 decimals of precision.
      */
     function _price(address token) internal view returns (uint) {
-        require(token == ETHRISE, "Invalid token passed to RisedlePriceOracle.");
-        return rVault.getNAV(ETHRISE).mul(BasePriceOracle(msg.sender).price(USDC)).div(1e6); // 1e6 = USDC decimals as returned by getNAV()
+        if (token == address(bbaUSD)) {
+            return bbaUSD.getRate().mul(BasePriceOracle(msg.sender).price(DAI)).div(1e18);
+        } else if (token == address(staBTC)) {
+            return staBTC.getRate().mul(BasePriceOracle(msg.sender).price(WBTC)).div(1e18);
+        } else revert("Invalid token address passed to BalancerStableLpTokenPriceOracle.");
     }
 }
