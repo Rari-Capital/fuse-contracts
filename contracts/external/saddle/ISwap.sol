@@ -3,5 +3,5 @@ pragma solidity 0.6.12;
 
 interface ISwap {
     function getVirtualPrice() external view returns (uint);
-    function getToken(uint) external view returns (address);
+    function getToken(uint8) external view returns (address);
 }

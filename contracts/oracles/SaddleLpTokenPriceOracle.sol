@@ -88,7 +88,8 @@ contract SaddleLpTokenPriceOracle is PriceOracle, BasePriceOracle {
         poolOf[lpToken] = pool;
 
         for (uint256 i = 0; i < 32; i++) {
-            try ISwap(pool).getToken(i) returns (address underlyingToken) {
+            console.log("on i = ", i);
+            try ISwap(pool).getToken(uint8(i)) returns (address underlyingToken) {
                 underlyingTokens[lpToken].push(underlyingToken);
             } catch {
                 require(i > 0, "Failed to get tokens underlying Saddle pool.");
