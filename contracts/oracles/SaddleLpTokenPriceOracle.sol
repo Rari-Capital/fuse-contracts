@@ -61,7 +61,7 @@ contract SaddleLpTokenPriceOracle is PriceOracle, BasePriceOracle {
             if (tokenPx < minPx) minPx = tokenPx;
         }
 
-        require(minPx != uint256(-1), "No minimum underlying token price found.");      
+        require(minPx != uint256(-1), "No minimum underlying token price found.");
         return minPx.mul(ISwap(pool).getVirtualPrice()).div(1e18); // Use min underlying token prices
     }
 
@@ -88,7 +88,6 @@ contract SaddleLpTokenPriceOracle is PriceOracle, BasePriceOracle {
         poolOf[lpToken] = pool;
 
         for (uint256 i = 0; i < 32; i++) {
-            console.log("on i = ", i);
             try ISwap(pool).getToken(uint8(i)) returns (address underlyingToken) {
                 underlyingTokens[lpToken].push(underlyingToken);
             } catch {

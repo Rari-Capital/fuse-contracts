@@ -20,6 +20,8 @@ import "./BasePriceOracle.sol";
 contract WSTEthPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
+    address public stETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+
     /**
      * @notice Fetches the token/ETH price, with 18 decimals of precision.
      * @param underlying The underlying token address for which to get the price.
@@ -45,6 +47,6 @@ contract WSTEthPriceOracle is PriceOracle, BasePriceOracle {
      * @notice Fetches the token/ETH price, with 18 decimals of precision.
      */
     function _price(address token) internal view returns (uint) {
-        return IWstETH(token).stEthPerToken();
+        return IWstETH(token).stEthPerToken().mul(BasePriceOracle(msg.sender).price(stETH)).div(1e18);
     }
 }
