@@ -24,6 +24,11 @@ module.exports = async function(deployer, network, accounts) {
     if (!process.env.UPGRADE_POOL_LENS_ADDRESS) return console.error("UPGRADE_POOL_LENS_ADDRESS is missing for upgrade");
     if (!process.env.UPGRADE_FEE_DISTRIBUTOR_ADDRESS) return console.error("UPGRADE_FEE_DISTRIBUTOR_ADDRESS is missing for upgrade");
   } else {
+    // Require implementation addresses set in env file
+    if (!process.env.COMPTROLLER_IMPLEMENTATION_ADDRESS) return console.error("COMPTROLLER_IMPLEMENTATION_ADDRESS is missing");
+    if (!process.env.CERC20_DELEGATE_ADDRESS) return console.error("CERC20_DELEGATE_ADDRESS is missing");
+    if (!process.env.CETHER_DELEGATE_ADDRESS) return console.error("CETHER_DELEGATE_ADDRESS is missing");
+
     // Deploy FusePoolDirectory
     var fusePoolDirectory = await deployProxy(["arbitrum", "arbitrum-fork", "arbitrum_rinkleby"].indexOf(network) >= 0 ? FusePoolDirectoryArbitrum : FusePoolDirectory, [false, []], { deployer, unsafeAllowCustomTypes: true });
     
@@ -39,6 +44,11 @@ module.exports = async function(deployer, network, accounts) {
 
     // Set pool limits
     await fuseFeeDistributor._setPoolLimits(web3.utils.toBN(0.001e18), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1), web3.utils.toBN(2).pow(web3.utils.toBN(256)).subn(1));
+    
+    // Whitelist implementations
+    await fuseFeeDistributor._editComptrollerImplementationWhitelist(["0x0000000000000000000000000000000000000000"], [process.env.COMPTROLLER_IMPLEMENTATION_ADDRESS], [true]);
+    await fuseFeeDistributor._editCErc20DelegateWhitelist(["0x0000000000000000000000000000000000000000"], [process.env.CERC20_DELEGATE_ADDRESS], [false], [true]);
+    await fuseFeeDistributor._editCEtherDelegateWhitelist(["0x0000000000000000000000000000000000000000"], [process.env.CETHER_DELEGATE_ADDRESS], [false], [true]);
 
     // Live network: transfer ownership of deployed contracts from the deployer to the owner
     if (["live", "live-fork"].indexOf(network) >= 0 && process.env.LIVE_OWNER && process.env.LIVE_DEPLOYER_ADDRESS.toLowerCase() !== process.env.LIVE_OWNER.toLowerCase()) {
