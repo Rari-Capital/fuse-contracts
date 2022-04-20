@@ -12,6 +12,7 @@ import "../external/curve/ICurveFactoryRegistry.sol";
 import "../external/curve/ICurvePool.sol";
 
 import "./BasePriceOracle.sol";
+import "hardhat/console.sol";
 
 /**
  * @title CurveFactoryLpTokenPriceOracle
@@ -60,7 +61,7 @@ contract CurveFactoryLpTokenPriceOracle is PriceOracle, BasePriceOracle {
             if (tokenPx < minPx) minPx = tokenPx;
         }
 
-        require(minPx != uint256(-1), "No minimum underlying token price found.");      
+        require(minPx != uint256(-1), "No minimum underlying token price found."); 
         return minPx.mul(ICurvePool(pool).get_virtual_price()).div(1e18); // Use min underlying token prices
     }
 
@@ -89,6 +90,8 @@ contract CurveFactoryLpTokenPriceOracle is PriceOracle, BasePriceOracle {
         if (n == 0) (n, ) = registry.get_meta_n_coins(pool);
         require(n != 0, "n");
         address[4] memory tokens = registry.get_coins(pool);
-        for (uint256 i = 0; i < n; i++) underlyingTokens[pool].push(tokens[i]);
+        for (uint256 i = 0; i < n; i++) {
+            underlyingTokens[pool].push(tokens[i]);
+        }
     }
 }
