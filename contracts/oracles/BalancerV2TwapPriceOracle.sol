@@ -19,7 +19,7 @@ import "./BasePriceOracle.sol";
  * @notice Stores cumulative prices and returns TWAPs for BalancerV2 assets.
  * @author sri yantra @RariCapital
  */
-contract BalancerV2TwapPriceOracle is PriceOracle, BasePriceOracle {
+contract BalancerV2BptTwapPriceOracle is PriceOracle, BasePriceOracle {
     using SafeMathUpgradeable for uint256;
 
     /**
