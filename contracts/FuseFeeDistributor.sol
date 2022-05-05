@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
-import "./external/gnosis/IGnosis.sol";
-
 /**
  * @title FuseFeeDistributor
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
@@ -30,6 +28,11 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         maxSupplyEth = uint256(-1);
         maxUtilizationRate = uint256(-1);
     }
+
+    /**
+     * @dev Maps underlying addresses to guardian role.
+     */
+    mapping(address => bool) public isGuardian;
 
     /**
      * @notice The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
@@ -95,8 +98,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     /**
      * @dev Globally pauses all borrowing. Accessible by multisig owners.
      */
-    function _pauseAllBorrowing() external {
-        require(IGnosis(owner()).isOwner(msg.sender) || msg.sender == owner(), "Must be multisig owner.");
+    function _pauseAllBorrowing() external onlyGuardian {
         minBorrowEth = uint(-1);
     }
 
@@ -104,6 +106,21 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
      * @dev Receives ETH fees.
      */
     receive() external payable { }
+
+    /**
+     * @dev Changes guardian role mapping.
+     */
+    function _editGuardianWhitelist(address account, bool status) external onlyOwner {
+        isGuardian(account) = status;
+    }
+
+    /**
+     * @dev Modifier that checks if `msg.sender == admin`.
+     */
+    modifier onlyGuardian {
+        require(isGuardian(msg.sender), "Sender is not a guardian.");
+        _;
+    }
 
     /**
      * @dev Sends data to a contract.
