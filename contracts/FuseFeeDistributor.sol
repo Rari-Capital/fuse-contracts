@@ -8,6 +8,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
+import "./external/gnosis/IGnosis.sol";
+
 /**
  * @title FuseFeeDistributor
  * @author David Lucid <david@rari.capital> (https://github.com/davidlucid)
@@ -88,6 +90,14 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
         minBorrowEth = _minBorrowEth;
         maxSupplyEth = _maxSupplyEth;
         maxUtilizationRate = _maxUtilizationRate;
+    }
+
+    /**
+     * @dev Globally pauses all borrowing. Accessible by multisig owners.
+     */
+    function _pauseAllBorrowing() external {
+        require(IGnosis(owner()).isOwner(msg.sender) || msg.sender == owner(), "Must be multisig owner.");
+        minBorrowEth = uint(-1);
     }
 
     /**
