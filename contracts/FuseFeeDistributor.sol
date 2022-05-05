@@ -110,15 +110,16 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     /**
      * @dev Changes guardian role mapping.
      */
-    function _editGuardianWhitelist(address account, bool status) external onlyOwner {
-        isGuardian(account) = status;
+    function _editGuardianWhitelist(address[] calldata accounts, bool[] calldata status) external onlyOwner {
+        require(accounts.length > 0 && accounts.length == status.length, "Array lengths must be equal and greater than 0.");
+        for (uint256 i = 0; i < accounts.length; i++) isGuardian[accounts[i]] = status[i];
     }
 
     /**
      * @dev Modifier that checks if msg.sender has guardian role.
      */
     modifier onlyGuardian {
-        require(isGuardian(msg.sender), "Sender is not a guardian.");
+        require(isGuardian[msg.sender], "Sender is not a guardian.");
         _;
     }
 
