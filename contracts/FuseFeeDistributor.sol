@@ -115,7 +115,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @dev Modifier that checks if `msg.sender == admin`.
+     * @dev Modifier that checks if msg.sender has guardian role.
      */
     modifier onlyGuardian {
         require(isGuardian(msg.sender), "Sender is not a guardian.");
