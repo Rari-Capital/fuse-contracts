@@ -96,7 +96,7 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     }
 
     /**
-     * @dev Globally pauses all borrowing. Accessible by multisig owners.
+     * @dev Globally pauses all borrowing. Accessible by guardian role.
      */
     function _pauseAllBorrowing() external onlyGuardian {
         minBorrowEth = uint(-1);
