@@ -30,6 +30,11 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @dev Maps underlying addresses to guardian role.
+     */
+    mapping(address => bool) public isGuardian;
+
+    /**
      * @notice The proportion of Fuse pool interest taken as a protocol fee (scaled by 1e18).
      */
     uint256 public defaultInterestFeeRate;
@@ -91,9 +96,32 @@ contract FuseFeeDistributor is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @dev Globally pauses all borrowing. Accessible by guardian role.
+     */
+    function _pauseAllBorrowing() external onlyGuardian {
+        minBorrowEth = uint(-1);
+    }
+
+    /**
      * @dev Receives ETH fees.
      */
     receive() external payable { }
+
+    /**
+     * @dev Changes guardian role mapping.
+     */
+    function _editGuardianWhitelist(address[] calldata accounts, bool[] calldata status) external onlyOwner {
+        require(accounts.length > 0 && accounts.length == status.length, "Array lengths must be equal and greater than 0.");
+        for (uint256 i = 0; i < accounts.length; i++) isGuardian[accounts[i]] = status[i];
+    }
+
+    /**
+     * @dev Modifier that checks if msg.sender has guardian role.
+     */
+    modifier onlyGuardian {
+        require(isGuardian[msg.sender], "Sender is not a guardian.");
+        _;
+    }
 
     /**
      * @dev Sends data to a contract.
