@@ -50,9 +50,9 @@ contract UniswapV3TwapPriceOracle is BasePriceOracle {
 
         // Return token/WETH TWAP
         address pool = IUniswapV3Factory(uniswapV3Factory).getPool(underlying, WETH, feeTier);
-        int24 timeWeightedAverageTick = OracleLibrary.consult(pool, TWAP_PERIOD);
+        (int24 arithmeticMeanTick, ) = OracleLibrary.consult(pool, TWAP_PERIOD);
         uint128 baseUnit = 10 ** uint128(ERC20Upgradeable(underlying).decimals());
-        return OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, baseUnit, underlying, WETH);
+        return OracleLibrary.getQuoteAtTick(arithmeticMeanTick, baseUnit, underlying, WETH);
     }
 
     /**

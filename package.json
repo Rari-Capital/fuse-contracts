@@ -28,13 +28,13 @@
   "devDependencies": {
     "@openzeppelin/truffle-upgrades": "^1.5.0",
     "@truffle/hdwallet-provider": "^1.2.6",
-    "@uniswap/v3-core": "^1.0.0",
-    "@uniswap/v3-periphery": "github:Uniswap/uniswap-v3-periphery#pull/96/head",
     "dotenv": "^8.2.0",
     "ganache-core": "^2.13.2",
     "truffle": "^5.3.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^3.4.0"
+    "@openzeppelin/contracts-upgradeable": "^3.4.0",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.1"
   }
 }
