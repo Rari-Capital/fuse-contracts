@@ -13,7 +13,7 @@ import "./IRedemptionStrategy.sol";
  * @notice Redeems oneFOX for USDC for use as a step in a liquidation.
  * @author Zerosnacks <zerosnacks@protonmail.com> (https://github.com/zerosnacks)
  */
-contract OneFoxLiquidator is IRedemptionStrategy, ICHICommon {
+contract OneFoxLiquidator is IRedemptionStrategy {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
