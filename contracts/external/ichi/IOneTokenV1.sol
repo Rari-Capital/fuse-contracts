@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+
 interface IERC20ExtendedUpgradeable is IERC20Upgradeable {
     function decimals() external view returns(uint8);
     function symbol() external view returns(string memory);
