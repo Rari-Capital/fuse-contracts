@@ -33,8 +33,8 @@ contract OneFoxLiquidator is IRedemptionStrategy, ICHICommon {
     function redeem(IERC20Upgradeable inputToken, uint256 inputAmount, bytes memory strategyData) external override returns (IERC20Upgradeable outputToken, uint256 outputAmount) {
         // Redeem oneFox for USDC
         IOneTokenV1 token = IOneTokenV1(address(inputToken));
-        outputToken = USDC;
         token.redeem(address(USDC), inputAmount);
+        outputToken = USDC;
         outputAmount = outputToken.balanceOf(address(this));
     }
 }
